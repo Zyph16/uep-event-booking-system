@@ -1,8 +1,0 @@
-ID:1 | NAME:Academic Bldg. | PATH:1.jpg
-ID:4 | NAME:Centennial Bldg. | PATH:2.jpg
-ID:6 | NAME:Kapihan | PATH:3.jpg
-ID:7 | NAME:Farmers | PATH:4.jpeg
-ID:8 | NAME:Gymnatorium | PATH:5.jpg
-ID:10 | NAME:Dormitory | PATH:6.jpg
-ID:14 | NAME:New facility | PATH:7.jpg
-ID:15 | NAME:Amphitheater | PATH:1.jpg
