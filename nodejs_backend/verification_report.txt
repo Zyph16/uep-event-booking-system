@@ -1,0 +1,16 @@
+Verifying Database Schema for Deployment...
+
+[users] password column: password_hash (varchar(255))
+  ✅ Password column length looks strictly okay.
+[billings] total_amount type: decimal(10,2)
+  ✅ Using DECIMAL for money.
+
+Checking Indexes on Foreign Keys:
+  ✅ bookings.facilityID is indexed.
+  ✅ bookings.userID is indexed.
+  ✅ billings.booking_id is indexed.
+  ✅ facility_equipment.facilityID is indexed.
+  ✅ facility_equipment.equipmentID is indexed.
+
+[users] Total users: 8
+[bookings] Total bookings: 0

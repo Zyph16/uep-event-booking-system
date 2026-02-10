@@ -1,0 +1,35 @@
+/* Custom Calendar Overrides to match legacy look */
+
+.fc {
+    --fc-border-color: #f0f0f0;
+    --fc-button-bg-color: #4a90e2;
+    --fc-button-border-color: #4a90e2;
+    --fc-button-hover-bg-color: #357abd;
+    --fc-button-hover-border-color: #357abd;
+    --fc-today-bg-color: rgba(74, 144, 226, 0.15);
+    font-family: inherit;
+}
+
+.fc .fc-toolbar-title {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #2b223f;
+}
+
+.fc .fc-daygrid-day-frame:hover {
+    background: #f7faff;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.fc .fc-day-today {
+    border: 2px solid #4a90e2 !important;
+    border-radius: 8px;
+}
+
+/* Hide default event styling if we are doing custom dots entirely */
+.fc-event {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
