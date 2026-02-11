@@ -30,6 +30,14 @@ class BookingController {
             if (!item) {
                 return res.status(404).json({ error: 'Not found' });
             }
+
+            // Ownership Check
+            const user = req.user;
+            const privilegedRoles = [1, 2, 3]; // Admin, President, PM
+            if (!privilegedRoles.includes(parseInt(user.role_id)) && item.user_id !== user.id) {
+                return res.status(403).json({ error: 'Forbidden' });
+            }
+
             res.json({ booking: item.toArray ? item.toArray() : item });
         } catch (e) {
             res.status(500).json({ error: e.message });
@@ -89,6 +97,22 @@ class BookingController {
 
             delete data.created_at;
 
+            // Note: BookingService.update might already handle some logic, but usually controllers enforce ownership BEFORE calling service
+            // However, update often involves status changes which might be done by admins/PMs.
+            // The service or existing logic might handle role-based updates.
+            // But let's verify ownership for CLIENTS.
+
+            // Fetch existing to check owner if not privileged
+            const privilegedRoles = [1, 2, 3];
+            if (!privilegedRoles.includes(parseInt(user.role_id))) {
+                const existing = await BookingService.getById(id);
+                if (!existing) return res.status(404).json({ error: 'Not found' });
+
+                if (existing.user_id !== user.id) {
+                    return res.status(403).json({ error: 'Forbidden' });
+                }
+            }
+
             const item = await BookingService.update(id, data, user);
 
             if (!item) {
@@ -105,6 +129,18 @@ class BookingController {
     static async getHistory(req, res) {
         const id = parseInt(req.params.id);
         try {
+            // Ownership Check (Duplicate logic, consider helper if repeating often, but inline for now)
+            const user = req.user;
+            const privilegedRoles = [1, 2, 3];
+
+            // We need to fetch booking to check owner.
+            const booking = await BookingService.getById(id);
+            if (!booking) return res.status(404).json({ error: 'Not found' });
+
+            if (!privilegedRoles.includes(parseInt(user.role_id)) && booking.user_id !== user.id) {
+                return res.status(403).json({ error: 'Forbidden' });
+            }
+
             const history = await BookingService.getApprovalHistory(id);
             res.json({ history });
         } catch (e) {
@@ -140,6 +176,23 @@ class BookingController {
         try {
             const item = await BookingService.getBillingContext(id);
             if (!item) return res.status(404).json({ error: 'Booking not found' });
+
+            // Ownership check
+            const user = req.user;
+            const privilegedRoles = [1, 2, 3];
+            // item likely contains booking details including user_id? 
+            // getBillingContext usually joins data. Let's assume item.booking.user_id or similar.
+            // If structure is unknown, safer to fetch booking separately or inspect item.
+            // Given getBillingContext output usually includes booking details...
+
+            // Let's rely on BookingService.getById for ownership check to be safe, 
+            // OR check if item has user_id.
+            // To be safe and consistent:
+            const booking = await BookingService.getById(id);
+            if (booking && !privilegedRoles.includes(parseInt(user.role_id)) && booking.user_id !== user.id) {
+                return res.status(403).json({ error: 'Forbidden' });
+            }
+
             res.json(item);
         } catch (e) {
             res.status(500).json({ error: e.message });

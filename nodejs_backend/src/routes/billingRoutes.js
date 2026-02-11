@@ -11,7 +11,7 @@ const projectManagerAccess = [
 ];
 
 router.post('/', projectManagerAccess, BillingController.store);
-router.get('/income-stats', authMiddleware, BillingController.getIncomeStats);
+router.get('/income-stats', projectManagerAccess, BillingController.getIncomeStats);
 router.get('/:id', authMiddleware, BillingController.show);
 
 module.exports = router;

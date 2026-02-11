@@ -104,7 +104,7 @@ export default function UserModal({
                         <label className="block text-sm font-medium text-gray-700 mb-1">Username *</label>
                         <input
                             type="text"
-                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-gray-600"
                             value={username}
                             onChange={e => setUsername(e.target.value)}
                             required
@@ -114,7 +114,7 @@ export default function UserModal({
                         <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                         <input
                             type="email"
-                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-gray-600"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                         />
@@ -125,7 +125,7 @@ export default function UserModal({
                         </label>
                         <input
                             type="password"
-                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-gray-600"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                             required={!userToEdit}
@@ -134,7 +134,7 @@ export default function UserModal({
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
                         <select
-                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-gray-600"
                             value={role}
                             onChange={e => setRole(e.target.value)}
                             required
@@ -168,7 +168,7 @@ export default function UserModal({
                                 {facilities.length === 0 ? (
                                     <p className="text-xs text-gray-500">No facilities available.</p>
                                 ) : facilities.map(fac => (
-                                    <label key={fac.id || fac.facilityID} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded">
+                                    <label key={fac.id || fac.facilityID} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded text-gray-600">
                                         <input
                                             type="checkbox"
                                             checked={selectedFacilities.includes(String(fac.id || fac.facilityID))}

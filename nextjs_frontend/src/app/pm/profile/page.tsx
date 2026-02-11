@@ -5,166 +5,527 @@ import {
     User,
     Mail,
     Phone,
-    MapPin,
-    Shield,
     Lock,
+    Save,
+    Camera,
     Building2,
-    Save
+    Shield,
+    MapPin
 } from "lucide-react";
 
 const API_BASE = "http://192.168.1.31:5000/api";
+import * as PhilAddress from 'phil-reg-prov-mun-brgy';
 
 export default function PMProfile() {
     const [user, setUser] = useState<any>(null);
+    const [personalInfo, setPersonalInfo] = useState<any>({
+        fname: "",
+        mname: "",
+        lname: "",
+        phone: "",
+        email: "",
+        street: "",
+        city: "",
+        barangay: "",
+        province: ""
+    });
+
+    // Address Data States
+    const [provinces, setProvinces] = useState<any[]>([]);
+    const [cities, setCities] = useState<any[]>([]);
+    const [barangays, setBarangays] = useState<any[]>([]);
+
+    // Load initial provinces on mount
+    useEffect(() => {
+        // @ts-ignore
+        const allProvinces = PhilAddress.provinces;
+        // Sort for better UX
+        const sorted = [...allProvinces].sort((a: any, b: any) => a.name.localeCompare(b.name));
+        setProvinces(sorted);
+    }, []);
+    // New state for displaying data in Hero Card (only updates on save/load)
+    const [displayInfo, setDisplayInfo] = useState<any>({
+        fname: "",
+        mname: "",
+        lname: ""
+    });
+
     const [assignedFacilities, setAssignedFacilities] = useState<any[]>([]);
+    const [passwords, setPasswords] = useState({
+        new: "",
+        confirm: ""
+    });
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [feedback, setFeedback] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
+    const loadData = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const userData = localStorage.getItem("user");
+            if (!token || !userData) return;
+
+            const parsedUser = JSON.parse(userData);
+            setUser(parsedUser);
+
+            // Fetch Personal Info
+            const res = await fetch(`${API_BASE}/personalinfo/me`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.personalinfo) {
+                    const info = {
+                        fname: data.personalinfo.fname || "",
+                        mname: data.personalinfo.mname || "",
+                        lname: data.personalinfo.lname || "",
+                        phone: data.personalinfo.phone || "",
+                        email: data.personalinfo.email || parsedUser.email || "",
+                        street: data.personalinfo.street || "",
+                        city: data.personalinfo.city || "",
+                        barangay: data.personalinfo.barangay || "",
+                        province: data.personalinfo.province || ""
+                    };
+                    setPersonalInfo(info);
+                    setDisplayInfo(info); // Sync display info on load
+
+                    // Pre-fetch address data if exists
+                    if (info.province) {
+                        // @ts-ignore
+                        const prov = PhilAddress.provinces.find((p: any) => p.name === info.province);
+                        if (prov) {
+                            // @ts-ignore
+                            const allCities = PhilAddress.city_mun.filter((c: any) => c.province_code === prov.province_code);
+                            setCities(allCities.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+
+                            if (info.city) {
+                                const city = allCities.find((c: any) => c.name === info.city);
+                                if (city) {
+                                    // @ts-ignore
+                                    const allBrgys = PhilAddress.barangays.filter((b: any) => b.city_code === city.city_code);
+                                    setBarangays(allBrgys.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    setPersonalInfo((prev: any) => ({ ...prev, email: parsedUser.email || "" }));
+                }
+            }
+
+            // Fetch Assigned Facilities
+            const facRes = await fetch(`${API_BASE}/facilities`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            const facData = await facRes.json();
+            // Handle both array/object formats for facilities
+            const allFac = Array.isArray(facData) ? facData : (facData.facilities || []);
+
+            if (parsedUser.assigned_facilities) {
+                const assigned = allFac.filter((f: any) => parsedUser.assigned_facilities.map(Number).includes(Number(f.facilityID)));
+                setAssignedFacilities(assigned);
+            }
+
+        } catch (err) {
+            console.error("Profile Fetch Error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const loadData = async () => {
-            try {
-                const token = localStorage.getItem("token");
-                const userData = localStorage.getItem("user");
-                if (!token || !userData) return;
-
-                const parsedUser = JSON.parse(userData);
-                setUser(parsedUser);
-
-                // Fetch all facilities to find the ones assigned
-                const res = await fetch(`${API_BASE}/facilities`, {
-                    headers: { "Authorization": `Bearer ${token}` }
-                });
-                const data = await res.json();
-                const allFac = data.facilities || [];
-
-                if (parsedUser.assigned_facilities) {
-                    const assigned = allFac.filter((f: any) => parsedUser.assigned_facilities.map(Number).includes(Number(f.facilityID)));
-                    setAssignedFacilities(assigned);
-                }
-
-            } catch (err) {
-                console.error("Profile Fetch Error:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         loadData();
     }, []);
+
+    // Effect to sync cities on load if province name exists
+    useEffect(() => {
+        if (personalInfo.province && provinces.length > 0 && cities.length === 0) {
+            const prov = provinces.find(p => p.name === personalInfo.province);
+            if (prov) {
+                // @ts-ignore
+                const allCities = PhilAddress.city_mun.filter((c: any) => c.prov_code === prov.prov_code);
+                setCities(allCities.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+            }
+        }
+    }, [personalInfo.province, provinces]);
+
+    // Effect to sync barangays on load if city name exists
+    useEffect(() => {
+        if (personalInfo.city && cities.length > 0 && barangays.length === 0) {
+            const city = cities.find(c => c.name === personalInfo.city);
+            if (city) {
+                // @ts-ignore
+                const allBrgys = PhilAddress.barangays.filter((b: any) => b.mun_code === city.mun_code);
+                setBarangays(allBrgys.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+            }
+        }
+    }, [personalInfo.city, cities]);
+
+    const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const name = e.target.value;
+        setPersonalInfo({ ...personalInfo, province: name, city: "", barangay: "" });
+
+        if (!name) {
+            setCities([]);
+            setBarangays([]);
+            return;
+        }
+
+        // @ts-ignore
+        const prov = PhilAddress.provinces.find((p: any) => p.name === name);
+        if (prov) {
+            // @ts-ignore
+            const filteredCities = PhilAddress.city_mun.filter((c: any) => c.prov_code === prov.prov_code);
+            setCities(filteredCities.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+            setBarangays([]);
+        }
+    };
+
+    const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const name = e.target.value;
+        setPersonalInfo({ ...personalInfo, city: name, barangay: "" });
+
+        if (!name) {
+            setBarangays([]);
+            return;
+        }
+
+        const city = cities.find((c: any) => c.name === name);
+        if (city) {
+            // @ts-ignore
+            const filteredBarangays = PhilAddress.barangays.filter((b: any) => b.mun_code === city.mun_code);
+            setBarangays(filteredBarangays.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+        }
+    };
+
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSaving(true);
+        setFeedback(null);
+
+        if (passwords.new && passwords.new !== passwords.confirm) {
+            setFeedback({ msg: "Passwords do not match", type: "error" });
+            setSaving(false);
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem("token");
+
+            // Update Personal Info
+            const piRes = await fetch(`${API_BASE}/personalinfo`, {
+                method: "POST", // Backend uses POST with upsert logic
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(personalInfo)
+            });
+
+            // Update Password if set
+            if (passwords.new) {
+                await fetch(`${API_BASE}/users/${user.id}`, {
+                    method: "PUT",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ password: passwords.new })
+                });
+            }
+
+            if (piRes.ok) {
+                setFeedback({ msg: "Profile updated successfully!", type: "success" });
+                setPasswords({ new: "", confirm: "" });
+                setDisplayInfo(personalInfo); // Update display info only on successful save
+            } else {
+                setFeedback({ msg: "Failed to update profile", type: "error" });
+            }
+
+        } catch (err) {
+            setFeedback({ msg: "An error occurred", type: "error" });
+        } finally {
+            setSaving(false);
+        }
+    };
 
     if (loading) return <div className="p-8 text-center text-gray-400">Loading profile...</div>;
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
             {/* Profile Header Card */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="h-32 bg-gradient-to-r from-[#1f3c88] to-[#0d2b6b]"></div>
                 <div className="px-8 pb-8 flex flex-col items-center -mt-16">
-                    <div className="w-32 h-32 bg-white rounded-full p-1 shadow-xl">
-                        <div className="w-full h-full bg-blue-50 rounded-full flex items-center justify-center border-4 border-white">
-                            <User size={64} className="text-[#1f3c88]" />
+                    <div className="relative group">
+                        <div className="w-32 h-32 bg-white rounded-full p-1 shadow-xl">
+                            <div className="w-full h-full bg-blue-50 rounded-full flex items-center justify-center border-4 border-white overflow-hidden text-[#1f3c88] font-black text-4xl uppercase">
+                                {displayInfo.fname ? displayInfo.fname[0] : user?.username?.[0] || "?"}
+                                {displayInfo.lname ? displayInfo.lname[0] : ""}
+                            </div>
+                        </div>
+                        <div className="absolute bottom-1 right-1 bg-white p-2 rounded-full shadow-lg text-gray-400 border border-gray-100 cursor-pointer hover:text-[#1f3c88] transition-colors">
+                            <Camera size={16} />
                         </div>
                     </div>
-                    <h2 className="mt-4 text-2xl font-black text-gray-800">{user?.username}</h2>
+                    <h2 className="mt-4 text-2xl font-black text-gray-800">
+                        {displayInfo.fname ? `${displayInfo.fname} ${displayInfo.mname ? displayInfo.mname[0] + '.' : ''} ${displayInfo.lname}` : user?.username}
+                    </h2>
                     <div className="mt-1 px-4 py-1 bg-blue-50 text-[#1f3c88] text-xs font-black uppercase tracking-widest rounded-full">
-                        {user?.role_name}
+                        {user?.role_name || "Project Manager"}
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Personal Information */}
-                <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col">
-                    <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
-                        <User className="text-[#1f3c88]" size={20} />
-                        <h3 className="text-lg font-bold text-gray-800">Account Information</h3>
-                    </div>
-
-                    <div className="space-y-6 flex-1">
-                        <div className="flex gap-4">
-                            <div className="p-3 bg-gray-50 rounded-xl">
-                                <Mail className="text-gray-400" size={18} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-0.5">Email Address</p>
-                                <p className="text-sm font-bold text-gray-700">{user?.email || "N/A"}</p>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-4">
-                            <div className="p-3 bg-gray-50 rounded-xl">
-                                <Phone className="text-gray-400" size={18} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-0.5">Phone Number</p>
-                                <p className="text-sm font-bold text-gray-700">{user?.phone || "N/A"}</p>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-4">
-                            <div className="p-3 bg-gray-50 rounded-xl">
-                                <MapPin className="text-gray-400" size={18} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-0.5">Personal Address</p>
-                                <p className="text-sm font-bold text-gray-700">{user?.address || "N/A"}</p>
-                            </div>
-                        </div>
-                    </div>
+            {feedback && (
+                <div className={`p-4 rounded-2xl text-sm font-bold border ${feedback.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-700 border-red-100'
+                    }`}>
+                    {feedback.msg}
                 </div>
+            )}
 
-                {/* Assigned Facilities */}
-                <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col">
-                    <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
-                        <Shield className="text-[#e91e63]" size={20} />
-                        <h3 className="text-lg font-bold text-gray-800">Assigned Responsibilities</h3>
-                    </div>
+            <form onSubmit={handleSave} className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Left Column: Personal & Address */}
+                    <div className="space-y-8 flex flex-col">
+                        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col">
+                            <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                                <User className="text-[#1f3c88]" size={20} />
+                                <h3 className="text-lg font-bold text-gray-800">Personal Details</h3>
+                            </div>
 
-                    <div className="flex-1">
-                        <p className="text-xs text-gray-500 mb-4 italic">As a Project Manager, you are authorized to manage these facilities: </p>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">First Name</label>
+                                        <input
+                                            type="text"
+                                            value={personalInfo.fname}
+                                            onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, fname: e.target.value }))}
+                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-400"
+                                            placeholder="Enter First Name"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Middle Name</label>
+                                        <input
+                                            type="text"
+                                            value={personalInfo.mname}
+                                            onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, mname: e.target.value }))}
+                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-400"
+                                            placeholder="Optional"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Last Name</label>
+                                        <input
+                                            type="text"
+                                            value={personalInfo.lname}
+                                            onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, lname: e.target.value }))}
+                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-400"
+                                            placeholder="Enter Last Name"
+                                        />
+                                    </div>
+                                </div>
 
-                        <div className="space-y-3">
-                            {assignedFacilities.length === 0 ? (
-                                <div className="text-center py-10 text-gray-400 text-sm">No facilities assigned yet</div>
-                            ) : (
-                                assignedFacilities.map((fac, idx) => (
-                                    <div key={idx} className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                        <div className="p-2 bg-white rounded-lg shadow-sm">
-                                            <Building2 size={20} className="text-[#1f3c88]" />
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-gray-800 text-sm">{fac.facility_name}</p>
-                                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">{fac.location}</p>
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Phone Number</label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
+                                        <input
+                                            type="text"
+                                            value={personalInfo.phone}
+                                            onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, phone: e.target.value }))}
+                                            className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-400"
+                                            placeholder="09XXXXXXXXX"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Email Address</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
+                                        <input
+                                            type="email"
+                                            value={personalInfo.email}
+                                            onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, email: e.target.value }))}
+                                            className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-900 placeholder:text-gray-400"
+                                            placeholder="email@example.com"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Address Information */}
+                        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col">
+                            <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                                <MapPin className="text-[#1f3c88]" size={20} />
+                                <h3 className="text-lg font-bold text-gray-800">Address Details</h3>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Province</label>
+                                        <div className="relative">
+                                            <select
+                                                value={personalInfo.province}
+                                                onChange={handleProvinceChange}
+                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-600 appearance-none"
+                                            >
+                                                <option value="">Select Province</option>
+                                                {provinces.map((p: any) => (
+                                                    <option key={p.prov_code} value={p.name}>{p.name}</option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                                <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor">
+                                                    <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                                                </svg>
+                                            </div>
                                         </div>
                                     </div>
-                                ))
-                            )}
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">City / Municipality</label>
+                                        <div className="relative">
+                                            <select
+                                                value={personalInfo.city}
+                                                onChange={handleCityChange}
+                                                disabled={!personalInfo.province}
+                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-600 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <option value="">Select City</option>
+                                                {cities.map((c: any) => (
+                                                    <option key={c.mun_code} value={c.name}>{c.name}</option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                                <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor">
+                                                    <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Barangay</label>
+                                        <div className="relative">
+                                            <select
+                                                value={personalInfo.barangay}
+                                                onChange={(e) => setPersonalInfo({ ...personalInfo, barangay: e.target.value })}
+                                                disabled={!personalInfo.city}
+                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-600 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <option value="">Select Barangay</option>
+                                                {barangays.map((b: any) => (
+                                                    <option key={b.name} value={b.name}>{b.name}</option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                                <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor">
+                                                    <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Street Address</label>
+                                        <input
+                                            type="text"
+                                            value={personalInfo.street}
+                                            onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, street: e.target.value }))}
+                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-600"
+                                            placeholder="Street / Unit / Building"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Assigned Facilities & Security */}
+                    <div className="space-y-8 flex flex-col">
+                        {/* Assigned Facilities */}
+                        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col flex-1">
+                            <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                                <Shield className="text-[#e91e63]" size={20} />
+                                <h3 className="text-lg font-bold text-gray-800">Assigned Responsibilities</h3>
+                            </div>
+
+                            <div className="flex-1">
+                                <p className="text-xs text-gray-500 mb-4 italic">As a Project Manager, you are authorized to manage these facilities: </p>
+
+                                <div className="space-y-3">
+                                    {assignedFacilities.length === 0 ? (
+                                        <div className="text-center py-10 text-gray-400 text-sm">No facilities assigned yet</div>
+                                    ) : (
+                                        assignedFacilities.map((fac, idx) => (
+                                            <div key={idx} className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                                <div className="p-2 bg-white rounded-lg shadow-sm">
+                                                    <Building2 size={20} className="text-[#1f3c88]" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-gray-800 text-sm">{fac.facility_name}</p>
+                                                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">{fac.location || "UEP Main"}</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Security */}
+                        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col">
+                            <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                                <Lock className="text-[#e91e63]" size={20} />
+                                <h3 className="text-lg font-bold text-gray-800">Security & Password</h3>
+                            </div>
+
+                            <div className="space-y-4">
+                                <p className="text-[10px] text-gray-400 italic">Leave password fields blank to keep your current password.</p>
+
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">New Password</label>
+                                    <input
+                                        type="password"
+                                        value={passwords.new}
+                                        onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e91e63]/20 focus:border-[#e91e63] text-sm font-medium placeholder:text-gray-400"
+                                        placeholder="••••••••"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Confirm Password</label>
+                                    <input
+                                        type="password"
+                                        value={passwords.confirm}
+                                        onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e91e63]/20 focus:border-[#e91e63] text-sm font-medium placeholder:text-gray-400"
+                                        placeholder="••••••••"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Change Password Placeholder */}
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between mb-6 border-b border-gray-50 pb-4">
-                    <div className="flex items-center gap-3">
-                        <Lock className="text-gray-400" size={20} />
-                        <h3 className="text-lg font-bold text-gray-800">Security</h3>
-                    </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-gray-50/50 p-6 rounded-2xl border border-dashed border-gray-200">
-                    <div>
-                        <p className="font-bold text-gray-800">Two-Factor Authentication</p>
-                        <p className="text-xs text-gray-500">Secure your account with an extra layer of protection</p>
-                    </div>
-                    <button className="px-6 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl text-xs font-bold uppercase transition-all hover:bg-gray-100">
-                        Enable 2FA
-                    </button>
-                    <button className="px-6 py-2 bg-[#1f3c88] text-white rounded-xl text-xs font-bold uppercase shadow-lg shadow-blue-100 transition-all hover:bg-[#0d2b6b]">
-                        Change Password
+                <div className="flex justify-end pt-4">
+                    <button
+                        type="submit"
+                        disabled={saving}
+                        className="flex items-center gap-2 bg-[#1f3c88] text-white px-8 py-3 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-[#0d2b6b] transition-all disabled:opacity-50"
+                    >
+                        <Save size={18} />
+                        {saving ? "Saving..." : "Save Profile Changes"}
                     </button>
                 </div>
-            </div>
+            </form>
         </div>
     );
 }

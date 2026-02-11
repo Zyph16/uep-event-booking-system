@@ -7,8 +7,11 @@ import {
     Phone,
     Lock,
     Save,
-    Camera
+    Camera,
+    MapPin
 } from "lucide-react";
+
+import * as PhilAddress from 'phil-reg-prov-mun-brgy';
 
 const API_BASE = "http://192.168.1.31:5000/api";
 
@@ -19,8 +22,21 @@ export default function PresidentProfile() {
         mname: "",
         lname: "",
         phone: "",
-        email: ""
+        fname: "",
+        mname: "",
+        lname: "",
+        phone: "",
+        email: "",
+        street: "",
+        city: "",
+        barangay: "",
+        province: ""
     });
+
+    // Address Data States
+    const [provinces, setProvinces] = useState<any[]>([]);
+    const [cities, setCities] = useState<any[]>([]);
+    const [barangays, setBarangays] = useState<any[]>([]);
     // New state for displaying data in Hero Card (only updates on save/load)
     const [displayInfo, setDisplayInfo] = useState<any>({
         fname: "",
@@ -57,10 +73,35 @@ export default function PresidentProfile() {
                         mname: data.personalinfo.mname || "",
                         lname: data.personalinfo.lname || "",
                         phone: data.personalinfo.phone || "",
-                        email: data.personalinfo.email || parsedUser.email || ""
+                        phone: data.personalinfo.phone || "",
+                        email: data.personalinfo.email || parsedUser.email || "",
+                        street: data.personalinfo.street || "",
+                        city: data.personalinfo.city || "",
+                        barangay: data.personalinfo.barangay || "",
+                        province: data.personalinfo.province || ""
                     };
                     setPersonalInfo(info);
                     setDisplayInfo(info); // Sync display info on load
+
+                    // Pre-fetch address data if exists
+                    if (info.province) {
+                        // @ts-ignore
+                        const prov = PhilAddress.provinces.find((p: any) => p.name === info.province);
+                        if (prov) {
+                            // @ts-ignore
+                            const allCities = PhilAddress.city_mun.filter((c: any) => c.prov_code === prov.prov_code);
+                            setCities(allCities.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+
+                            if (info.city) {
+                                const city = allCities.find((c: any) => c.name === info.city);
+                                if (city) {
+                                    // @ts-ignore
+                                    const allBrgys = PhilAddress.barangays.filter((b: any) => b.mun_code === city.mun_code);
+                                    setBarangays(allBrgys.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+                                }
+                            }
+                        }
+                    }
                 } else {
                     setPersonalInfo((prev: any) => ({ ...prev, email: parsedUser.email || "" }));
                 }
@@ -75,6 +116,76 @@ export default function PresidentProfile() {
     useEffect(() => {
         loadData();
     }, []);
+
+    // Load initial provinces on mount
+    useEffect(() => {
+        // @ts-ignore
+        const allProvinces = PhilAddress.provinces;
+        // Sort for better UX
+        const sorted = [...allProvinces].sort((a: any, b: any) => a.name.localeCompare(b.name));
+        setProvinces(sorted);
+    }, []);
+
+    // Effect to sync cities on load if province name exists
+    useEffect(() => {
+        if (personalInfo.province && provinces.length > 0 && cities.length === 0) {
+            const prov = provinces.find(p => p.name === personalInfo.province);
+            if (prov) {
+                // @ts-ignore
+                const allCities = PhilAddress.city_mun.filter((c: any) => c.prov_code === prov.prov_code);
+                setCities(allCities.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+            }
+        }
+    }, [personalInfo.province, provinces]);
+
+    // Effect to sync barangays on load if city name exists
+    useEffect(() => {
+        if (personalInfo.city && cities.length > 0 && barangays.length === 0) {
+            const city = cities.find(c => c.name === personalInfo.city);
+            if (city) {
+                // @ts-ignore
+                const allBrgys = PhilAddress.barangays.filter((b: any) => b.mun_code === city.mun_code);
+                setBarangays(allBrgys.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+            }
+        }
+    }, [personalInfo.city, cities]);
+
+    const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const name = e.target.value;
+        setPersonalInfo({ ...personalInfo, province: name, city: "", barangay: "" });
+
+        if (!name) {
+            setCities([]);
+            setBarangays([]);
+            return;
+        }
+
+        // @ts-ignore
+        const prov = PhilAddress.provinces.find((p: any) => p.name === name);
+        if (prov) {
+            // @ts-ignore
+            const filteredCities = PhilAddress.city_mun.filter((c: any) => c.prov_code === prov.prov_code);
+            setCities(filteredCities.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+            setBarangays([]);
+        }
+    };
+
+    const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const name = e.target.value;
+        setPersonalInfo({ ...personalInfo, city: name, barangay: "" });
+
+        if (!name) {
+            setBarangays([]);
+            return;
+        }
+
+        const city = cities.find((c: any) => c.name === name);
+        if (city) {
+            // @ts-ignore
+            const filteredBarangays = PhilAddress.barangays.filter((b: any) => b.mun_code === city.mun_code);
+            setBarangays(filteredBarangays.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+        }
+    };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -166,71 +277,162 @@ export default function PresidentProfile() {
             <form onSubmit={handleSave} className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Personal Information */}
-                    <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col">
-                        <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
-                            <User className="text-[#1f3c88]" size={20} />
-                            <h3 className="text-lg font-bold text-gray-800">Personal Details</h3>
+                    {/* Personal Information & Address */}
+                    <div className="space-y-8 flex flex-col">
+                        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col">
+                            <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                                <User className="text-[#1f3c88]" size={20} />
+                                <h3 className="text-lg font-bold text-gray-800">Personal Details</h3>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">First Name</label>
+                                        <input
+                                            type="text"
+                                            value={personalInfo.fname}
+                                            onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, fname: e.target.value }))}
+                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-400"
+                                            placeholder="Enter First Name"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Middle Name</label>
+                                        <input
+                                            type="text"
+                                            value={personalInfo.mname}
+                                            onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, mname: e.target.value }))}
+                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-400"
+                                            placeholder="Optional"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Last Name</label>
+                                        <input
+                                            type="text"
+                                            value={personalInfo.lname}
+                                            onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, lname: e.target.value }))}
+                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-400"
+                                            placeholder="Enter Last Name"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Phone Number</label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
+                                        <input
+                                            type="text"
+                                            value={personalInfo.phone}
+                                            onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, phone: e.target.value }))}
+                                            className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-400"
+                                            placeholder="09XXXXXXXXX"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Email Address</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
+                                        <input
+                                            type="email"
+                                            value={personalInfo.email}
+                                            onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, email: e.target.value }))}
+                                            className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-900 placeholder:text-gray-400"
+                                            placeholder="email@example.com"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">First Name</label>
-                                    <input
-                                        type="text"
-                                        value={personalInfo.fname}
-                                        onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, fname: e.target.value }))}
-                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-400"
-                                        placeholder="Enter First Name"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Middle Name</label>
-                                    <input
-                                        type="text"
-                                        value={personalInfo.mname}
-                                        onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, mname: e.target.value }))}
-                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-400"
-                                        placeholder="Optional"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Last Name</label>
-                                    <input
-                                        type="text"
-                                        value={personalInfo.lname}
-                                        onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, lname: e.target.value }))}
-                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-400"
-                                        placeholder="Enter Last Name"
-                                    />
-                                </div>
+                        {/* Address Information */}
+                        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col">
+                            <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                                <MapPin className="text-[#1f3c88]" size={20} />
+                                <h3 className="text-lg font-bold text-gray-800">Address Details</h3>
                             </div>
 
-                            <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Phone Number</label>
-                                <div className="relative">
-                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
-                                    <input
-                                        type="text"
-                                        value={personalInfo.phone}
-                                        onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, phone: e.target.value }))}
-                                        className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-400"
-                                        placeholder="09XXXXXXXXX"
-                                    />
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Province</label>
+                                        <div className="relative">
+                                            <select
+                                                value={personalInfo.province}
+                                                onChange={handleProvinceChange}
+                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-600 appearance-none"
+                                            >
+                                                <option value="">Select Province</option>
+                                                {provinces.map((p: any) => (
+                                                    <option key={p.prov_code} value={p.name}>{p.name}</option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                                <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor">
+                                                    <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">City / Municipality</label>
+                                        <div className="relative">
+                                            <select
+                                                value={personalInfo.city}
+                                                onChange={handleCityChange}
+                                                disabled={!personalInfo.province}
+                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-600 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <option value="">Select City</option>
+                                                {cities.map((c: any) => (
+                                                    <option key={c.mun_code} value={c.name}>{c.name}</option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                                <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor">
+                                                    <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Email Address</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
-                                    <input
-                                        type="email"
-                                        value={personalInfo.email}
-                                        onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, email: e.target.value }))}
-                                        className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-900 placeholder:text-gray-400"
-                                        placeholder="email@example.com"
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Barangay</label>
+                                        <div className="relative">
+                                            <select
+                                                value={personalInfo.barangay}
+                                                onChange={(e) => setPersonalInfo({ ...personalInfo, barangay: e.target.value })}
+                                                disabled={!personalInfo.city}
+                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-600 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <option value="">Select Barangay</option>
+                                                {barangays.map((b: any) => (
+                                                    <option key={b.name} value={b.name}>{b.name}</option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                                <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor">
+                                                    <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 block">Street Address</label>
+                                        <input
+                                            type="text"
+                                            value={personalInfo.street}
+                                            onChange={(e) => setPersonalInfo((prev: any) => ({ ...prev, street: e.target.value }))}
+                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-600"
+                                            placeholder="Street / Unit / Building"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>

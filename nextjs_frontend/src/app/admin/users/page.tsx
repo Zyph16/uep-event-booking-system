@@ -54,7 +54,12 @@ export default function ManageUsersPage() {
 
             setUsers(userData.users || []);
             setRoles(roleData.roles || []);
-            setFacilities(facData.facilities || []);
+            // Fix: Handle both direct array and object wrapper for facilities
+            if (Array.isArray(facData)) {
+                setFacilities(facData);
+            } else {
+                setFacilities(facData.facilities || []);
+            }
 
         } catch (err) {
             console.error("Error fetching users data:", err);

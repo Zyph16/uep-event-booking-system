@@ -1,5 +1,5 @@
 class PersonalInfo {
-    constructor(personalinfoID, userID, fname, mname, lname, email, phone, street = null, city = null, province = null) {
+    constructor(personalinfoID, userID, fname, mname, lname, email, phone, street = null, city = null, barangay = null, province = null) {
         this.personalinfoID = personalinfoID;
         this.userID = userID;
         this.fname = fname;
@@ -9,6 +9,7 @@ class PersonalInfo {
         this.phone = phone;
         this.street = street;
         this.city = city;
+        this.barangay = barangay;
         this.province = province;
     }
 
@@ -23,6 +24,7 @@ class PersonalInfo {
             row.phone || null,
             row.street || null,
             row.city || null,
+            row.barangay || null,
             row.province || null
         );
     }
@@ -36,6 +38,7 @@ class PersonalInfo {
     getPhone() { return this.phone; }
     getStreet() { return this.street; }
     getCity() { return this.city; }
+    getBarangay() { return this.barangay; }
     getProvince() { return this.province; }
 
     toArray() {
@@ -49,6 +52,7 @@ class PersonalInfo {
             phone: this.phone,
             street: this.street,
             city: this.city,
+            barangay: this.barangay,
             province: this.province
         };
     }

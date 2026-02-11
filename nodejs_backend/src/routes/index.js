@@ -11,8 +11,10 @@ const equipmentRoutes = require('./equipmentRoutes');
 const roomRoutes = require('./roomRoutes');
 const billingRoutes = require('./billingRoutes');
 
+
 router.use('/users', userRoutes);
 router.use('/personalinfo', personalInfoRoutes);
+
 router.use('/facilities', facilityRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/notifications', notificationRoutes);
