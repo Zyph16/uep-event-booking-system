@@ -18,6 +18,7 @@ app.use(cors({
         // Also allow specific ports if needed, but regex handles standard dev ports
         if (origin.startsWith('http://localhost') ||
             origin.startsWith('http://127.0.0.1') ||
+            origin.startsWith('https://uepbooking.vercel.app') ||
             origin.match(/^http:\/\/192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$/) ||
             origin.match(/^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$/) ||
             origin.match(/^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}(:\d+)?$/)) {
