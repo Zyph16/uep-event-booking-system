@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 // import Image from "next/image";
 import { MapPin, Users, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { getBackendUrl } from "@/utils/config";
 
 interface FacilityListProps {
     facilities: any[];
@@ -29,11 +30,10 @@ export default function FacilityList({ facilities, loading, error, selectedId, o
                 const isUnavailable = facility.status.toLowerCase() !== "available";
 
                 // Handle image URL
-                const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
                 const imageUrl = facility.imagepath
                     ? (facility.imagepath.startsWith('http')
                         ? facility.imagepath
-                        : `http://${hostname}:5000${facility.imagepath.startsWith('/') ? '' : '/'}${facility.imagepath}`)
+                        : `${getBackendUrl()}${facility.imagepath.startsWith('/') ? '' : '/'}${facility.imagepath}`)
                     : null;
 
                 return (
@@ -114,8 +114,8 @@ export default function FacilityList({ facilities, loading, error, selectedId, o
                         {renderExpandedDetails && (
                             <div
                                 className={`grid transition-all duration-500 ease-in-out ${isSelected
-                                        ? 'grid-rows-[1fr] opacity-100 lg:hidden'
-                                        : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+                                    ? 'grid-rows-[1fr] opacity-100 lg:hidden'
+                                    : 'grid-rows-[0fr] opacity-0 pointer-events-none'
                                     }`}
                             >
                                 <div className="overflow-hidden min-h-0">

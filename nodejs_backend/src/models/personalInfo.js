@@ -18,7 +18,7 @@ class PersonalInfo {
             row.personalinfoID,
             row.userID,
             row.fname,
-            row.mname || null,
+            row.middle_name || null,
             row.lname,
             row.email,
             row.phone || null,

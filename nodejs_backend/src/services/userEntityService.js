@@ -1,5 +1,6 @@
 const UserEntityRepository = require('../repositories/userEntityRepository');
 const bcrypt = require('bcryptjs');
+const Roles = require('../core/roles');
 
 class UserEntityService {
     static async register(username, roleId, password, facilityIds = []) {
@@ -7,6 +8,14 @@ class UserEntityService {
         const existing = await UserEntityRepository.findByUsername(username);
         if (existing) {
             throw new Error('Username already taken');
+        }
+
+        // Check for unique University President
+        if (roleId === Roles.UNIVERSITY_PRESIDENT) {
+            const allUsers = await UserEntityRepository.findAll();
+            if (allUsers.some(u => u.role_id === Roles.UNIVERSITY_PRESIDENT)) {
+                throw new Error('A University President already exists. Only one user can hold this role.');
+            }
         }
 
         // Hash password
@@ -55,6 +64,15 @@ class UserEntityService {
         if (updates.facility_ids) {
             facilityIds = updates.facility_ids;
             delete updates.facility_ids;
+        }
+
+        // Check for unique University President
+        if (updates.role_id === Roles.UNIVERSITY_PRESIDENT) {
+            const allUsers = await UserEntityRepository.findAll();
+            const existingPresident = allUsers.find(u => u.role_id === Roles.UNIVERSITY_PRESIDENT);
+            if (existingPresident && existingPresident.id !== userId) {
+                throw new Error('A University President already exists. Only one user can hold this role.');
+            }
         }
 
         const user = await UserEntityRepository.update(userId, updates);

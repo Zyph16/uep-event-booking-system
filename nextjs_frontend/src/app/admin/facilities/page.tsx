@@ -4,10 +4,12 @@ import React, { useEffect, useState } from "react";
 import FacilityHero from "@/components/admin/facilities/FacilityHero";
 import FacilityModal from "@/components/admin/facilities/FacilityModal";
 import Modal from "@/components/shared/Modal";
+import { getApiBaseUrl } from "@/utils/config";
 
-const API_BASE = "http://192.168.1.31:5000/api";
+// const API_BASE = "http://localhost:5000/api";
+const API_BASE = getApiBaseUrl();
 
-export default function ManageFacilitiesPage() {
+export default function FacilitiesPage() {
     const [facilities, setFacilities] = useState<any[]>([]);
     const [allEquipment, setAllEquipment] = useState<any[]>([]);
     const [allRooms, setAllRooms] = useState<any[]>([]);
@@ -38,16 +40,19 @@ export default function ManageFacilitiesPage() {
             const eqData = await eqRes.json();
             const rmData = await rmRes.json();
 
-            setFacilities(facData.facilities || []);
+            setFacilities(Array.isArray(facData) ? facData : (facData.facilities || []));
             setAllEquipment(eqData.equipment || []);
             setAllRooms(rmData.rooms || []);
 
+            // Handle default selection logic with the corrected data structure
+            const loadedFacilities = Array.isArray(facData) ? facData : (facData.facilities || []);
+
             // Default select first if exists and none selected
-            if (facData.facilities && facData.facilities.length > 0 && !selectedFacility) {
-                setSelectedFacility(facData.facilities[0]);
+            if (loadedFacilities.length > 0 && !selectedFacility) {
+                setSelectedFacility(loadedFacilities[0]);
             } else if (selectedFacility) {
                 // Refresh selected facility data
-                const updated = (facData.facilities || []).find((f: any) => f.facilityID === selectedFacility.facilityID || f.id === selectedFacility.id);
+                const updated = loadedFacilities.find((f: any) => f.facilityID === selectedFacility.facilityID || f.id === selectedFacility.id);
                 if (updated) setSelectedFacility(updated);
             }
 

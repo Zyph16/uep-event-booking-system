@@ -95,15 +95,15 @@ export default function PresidentBookingDetailModal({ isOpen, onClose, booking, 
                         {/* Letterhead */}
                         <div className="text-center mb-8 relative">
                             <div className="flex justify-between items-center mb-4 px-4">
-                                <img src="/uep_logo.png" alt="UEP" className="h-20 w-auto" />
+                                <img src="/images/uep_logo.png" alt="UEP" className="h-20 w-auto" />
                                 <div className="text-center flex-1 mx-4">
                                     <h5 className="text-[12px] font-normal m-0 tracking-wide uppercase">Republic of the Philippines</h5>
                                     <h4 className="text-[16px] font-bold m-1 font-sans">UNIVERSITY OF EASTERN PHILIPPINES</h4>
                                     <h5 className="text-[12px] font-normal m-0 font-sans italic">University Town, Northern Samar, Philippines</h5>
                                 </div>
                                 <div className="flex gap-2 h-20">
-                                    <img src="/iso_logo.jpg" alt="ISO" className="h-full w-auto" />
-                                    <img src="/bagong_pilipinas.jpg" alt="Bagong Pilipinas" className="h-full w-auto" />
+                                    <img src="/images/socotec.png" alt="ISO" className="h-full w-auto" />
+                                    <img src="/images/Bagong_Pilipinas_logo.png" alt="Bagong Pilipinas" className="h-full w-auto" />
                                 </div>
                             </div>
 
@@ -165,14 +165,7 @@ export default function PresidentBookingDetailModal({ isOpen, onClose, booking, 
                                         <div className="text-[10px] mt-1 italic">Applicant / Requested By</div>
                                     </div>
                                 </div>
-                                <div className="text-center">
-                                    <div className="border-t border-black pt-1 px-4 inline-block min-w-[200px]">
-                                        <div className="font-bold lowercase">
-                                            {booking.dean_signed ? "SIGNED" : "________________"}
-                                        </div>
-                                        <div className="text-[10px] mt-1 italic">Dean / Office Head</div>
-                                    </div>
-                                </div>
+
                                 <div className="text-center">
                                     <div className="border-t border-black pt-1 px-4 inline-block min-w-[200px]">
                                         <div className="font-bold lowercase">
@@ -181,7 +174,7 @@ export default function PresidentBookingDetailModal({ isOpen, onClose, booking, 
                                         <div className="text-[10px] mt-1 italic">Director, Auxiliary Services</div>
                                     </div>
                                 </div>
-                                <div className="text-center">
+                                <div className="flex justify-end ml-115 text-center">
                                     <div className="border-t border-black pt-1 px-4 inline-block min-w-[200px]">
                                         <div className="font-bold lowercase">
                                             {booking.president_signed ? "SIGNED" : "________________"}

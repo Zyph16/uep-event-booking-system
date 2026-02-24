@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Info, CheckCircle, ChevronDown, Calendar as CalendarIcon, MapPin, Users, Plus, ShieldCheck, AlertTriangle, ArrowLeft, Filter, Check } from "lucide-react";
+import { X, Info, CheckCircle, ChevronDown, Calendar as CalendarIcon, MapPin, Users, Plus, ShieldCheck, AlertTriangle, ArrowLeft, Filter, Check, Box as BoxIcon } from "lucide-react";
 import Calendar from "@/components/shared/Calendar";
+import StatusModal from "@/components/shared/StatusModal";
+import { getApiBaseUrl, getBackendUrl } from "@/utils/config";
 
 interface BookingModalProps {
     isOpen: boolean;
@@ -74,6 +76,8 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
         setupTimeStart: "",
         setupTimeEnd: "",
         purpose: "",
+        selectedEquipment: [] as number[],
+        selectedRooms: [] as number[],
         agreedToPolicy: false
     });
 
@@ -84,6 +88,11 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
     // Submission state
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+    // Warning Modal State
+    const [warningMsg, setWarningMsg] = useState("");
+    const [isWarningOpen, setIsWarningOpen] = useState(false);
 
     // NEW: Calendar Visualization State
     const [events, setEvents] = useState<any[]>([]);
@@ -105,10 +114,8 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
 
         const fetchData = async () => {
             try {
-                const hostname = window.location.hostname;
-
                 // Fetch All Facilities for Dropdown
-                const facRes = await fetch(`http://${hostname}:5000/api/facilities/public`);
+                const facRes = await fetch(`${getApiBaseUrl()}/facilities/public`);
                 if (facRes.ok) {
                     const facData = await facRes.json();
                     const allFacilities = facData.facilities.map((f: any) => f.facility_name).sort();
@@ -116,7 +123,7 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
                 }
 
                 // Fetch Public Bookings
-                const bookRes = await fetch(`http://${hostname}:5000/api/bookings/public`);
+                const bookRes = await fetch(`${getApiBaseUrl()}/bookings/public`);
                 if (bookRes.ok) {
                     const bookData = await bookRes.json();
                     setRawBookings(bookData.bookings || []);
@@ -173,7 +180,10 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
                         backgroundColor: color,
                         display: 'background', // Or just standard event to be rendered as dot via CSS
                         classNames: ['event-dot'], // Custom class for styling if needed
-                        extendedProps: { type }
+                        extendedProps: {
+                            type,
+                            status: booking.status
+                        }
                     });
                 }
                 current.setDate(current.getDate() + 1);
@@ -196,6 +206,18 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
     // Handle Calendar Selection
     const handleDateSelect = (arg: any) => {
         const dateStr = arg.dateStr;
+
+        // CHECK: Is Date in the Past?
+        const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
+
+        if (dateStr < todayStr) {
+            setWarningMsg("You cannot book dates in the past. Please select a current or future date.");
+            setIsWarningOpen(true);
+            return;
+        }
+
+        // ALLOW BOOKING ON OCCUPIED DATES (Time-Specific Conflict Check is handled by Backend)
+
         setFormData(prev => {
             const exists = prev.dateSelections.find(d => d.date === dateStr);
             let newSelections;
@@ -226,12 +248,32 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
 
     // Helper to update specific time
     const updateTime = (date: string, field: 'timeStart' | 'timeEnd', value: string) => {
-        setFormData(prev => ({
-            ...prev,
-            dateSelections: prev.dateSelections.map(d =>
-                d.date === date ? { ...d, [field]: value } : d
-            )
-        }));
+        setFormData(prev => {
+            const updatedSelections = prev.dateSelections.map(d => {
+                if (d.date !== date) return d;
+
+                const updated = { ...d, [field]: value };
+
+                // Auto-calculate timeEnd if timeStart is changed
+                if (field === 'timeStart' && value) {
+                    const [hours, minutes] = value.split(':').map(Number);
+                    let endHours = hours + 8;
+                    let endMinutes = minutes;
+
+                    // Cap at 23:00 (11 PM)
+                    if (endHours > 23 || (endHours === 23 && endMinutes > 0)) {
+                        endHours = 23;
+                        endMinutes = 0;
+                    }
+
+                    updated.timeEnd = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+                }
+
+                return updated;
+            });
+
+            return { ...prev, dateSelections: updatedSelections };
+        });
     };
 
     // Policy Confirmation
@@ -294,11 +336,12 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
                 setup_date_end: formData.setupDate || null,
                 setup_time_start: formData.setupTimeStart || null,
                 setup_time_end: formData.setupTimeEnd || null,
-                schedule: schedule // Add the schedule array
+                schedule: schedule,
+                equipmentIDs: formData.selectedEquipment,
+                roomIDs: formData.selectedRooms
             };
 
-            const hostname = window.location.hostname;
-            const res = await fetch(`http://${hostname}:5000/api/bookings`, {
+            const res = await fetch(`${getApiBaseUrl()}/bookings`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -312,19 +355,7 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
                 throw new Error(errData.error || "Failed to submit booking.");
             }
 
-            alert(`Booking Request Submitted Successfully!`);
-            onClose();
-            // Reset form
-            setFormData({
-                organization: "",
-                dateSelections: [],
-                setupDate: "",
-                setupTimeStart: "",
-                setupTimeEnd: "",
-                purpose: "",
-                agreedToPolicy: false
-            });
-            setHasReadPolicy(false);
+            setShowSuccessModal(true);
 
         } catch (err: any) {
             console.error(err);
@@ -334,15 +365,32 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
         }
     };
 
+    const handleSuccessAction = () => {
+        setShowSuccessModal(false);
+        onClose();
+        // Reset form
+        setFormData({
+            organization: "",
+            dateSelections: [],
+            setupDate: "",
+            setupTimeStart: "",
+            setupTimeEnd: "",
+            purpose: "",
+            selectedEquipment: [],
+            selectedRooms: [],
+            agreedToPolicy: false
+        });
+        setHasReadPolicy(false);
+    };
+
     // CORRECTED: Early return AFTER hooks
     if (!isOpen || !facility) return null;
 
     // Image handling
-    const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
     const imageUrl = facility.imagepath
         ? (facility.imagepath.startsWith('http')
             ? facility.imagepath
-            : `http://${hostname}:5000${facility.imagepath.startsWith('/') ? '' : '/'}${facility.imagepath}`)
+            : `${getBackendUrl()}${facility.imagepath.startsWith('/') ? '' : '/'}${facility.imagepath}`)
         : null;
 
     // Validation Warnings
@@ -418,7 +466,106 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
                                 </div>
                             </div>
 
-                            {/* Section 2: Date & Time */}
+                            {/* Section 2: Inclusions (Equipment & Rooms) */}
+                            <div className="space-y-4 pt-4 border-t border-gray-100">
+                                <h3 className="font-bold text-[#2d2d5f] flex items-center gap-2">
+                                    <BoxIcon size={18} /> Inclusions
+                                </h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Equipment Selection */}
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Equipment</label>
+                                        <div className="relative">
+                                            <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm min-h-[46px] flex flex-wrap gap-1">
+                                                {formData.selectedEquipment.length === 0 && <span className="text-gray-400">Select Equipment...</span>}
+                                                {facility.inclusions?.equipment?.map((item: any) => (
+                                                    formData.selectedEquipment.includes(item.id) && (
+                                                        <span key={item.id} className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded flex items-center gap-1">
+                                                            {item.name}
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    setFormData(prev => ({ ...prev, selectedEquipment: prev.selectedEquipment.filter(id => id !== item.id) }))
+                                                                }}
+                                                                className="hover:text-red-500 relative z-10"
+                                                            >
+                                                                <X size={12} />
+                                                            </button>
+                                                        </span>
+                                                    )
+                                                ))}
+                                            </div>
+                                            <select
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                onChange={(e) => {
+                                                    const val = parseInt(e.target.value);
+                                                    if (!isNaN(val) && !formData.selectedEquipment.includes(val)) {
+                                                        setFormData(prev => ({ ...prev, selectedEquipment: [...prev.selectedEquipment, val] }));
+                                                    }
+                                                }}
+                                                value=""
+                                            >
+                                                <option value="" disabled>Add Equipment</option>
+                                                {facility.inclusions?.equipment?.map((item: any) => (
+                                                    <option key={item.id} value={item.id} disabled={formData.selectedEquipment.includes(item.id)}>
+                                                        {item.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {/* Room Selection */}
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Rooms</label>
+                                        <div className="relative">
+                                            <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm min-h-[46px] flex flex-wrap gap-1">
+                                                {formData.selectedRooms.length === 0 && <span className="text-gray-400">Select Rooms...</span>}
+                                                {facility.inclusions?.rooms?.map((item: any) => (
+                                                    formData.selectedRooms.includes(item.id) && (
+                                                        <span key={item.id} className="bg-purple-100 text-purple-800 text-xs font-semibold px-2 py-0.5 rounded flex items-center gap-1">
+                                                            {item.name}
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    setFormData(prev => ({ ...prev, selectedRooms: prev.selectedRooms.filter(id => id !== item.id) }))
+                                                                }}
+                                                                className="hover:text-red-500 relative z-10"
+                                                            >
+                                                                <X size={12} />
+                                                            </button>
+                                                        </span>
+                                                    )
+                                                ))}
+                                            </div>
+                                            <select
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                onChange={(e) => {
+                                                    const val = parseInt(e.target.value);
+                                                    if (!isNaN(val) && !formData.selectedRooms.includes(val)) {
+                                                        setFormData(prev => ({ ...prev, selectedRooms: [...prev.selectedRooms, val] }));
+                                                    }
+                                                }}
+                                                value=""
+                                            >
+                                                <option value="" disabled>Add Room</option>
+                                                {facility.inclusions?.rooms?.map((item: any) => (
+                                                    <option key={item.id} value={item.id} disabled={formData.selectedRooms.includes(item.id)}>
+                                                        {item.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Section 3: Date & Time */}
                             <div className="space-y-4 pt-4 border-t border-gray-100">
                                 <h3 className="font-bold text-[#2d2d5f] flex items-center gap-2">
                                     <CalendarIcon size={18} /> Event Schedule
@@ -441,29 +588,38 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
                                     {formData.dateSelections.length > 0 && (
                                         <div className="space-y-3">
                                             {formData.dateSelections.map((selection, index) => (
-                                                <div key={selection.date} className="bg-white border border-blue-100 rounded-lg p-3 shadow-sm flex flex-col md:flex-row gap-3 items-center animate-in slide-in-from-left-2 duration-300">
-                                                    <div className="flex-1 w-full md:w-auto flex items-center gap-3">
-                                                        <div className="bg-blue-100 text-blue-700 font-bold px-3 py-1.5 rounded text-sm text-center min-w-[100px]">
-                                                            {selection.date}
+                                                <div key={selection.date} className="bg-white border border-blue-100 rounded-lg p-3 shadow-sm flex flex-col md:flex-row gap-3 items-start md:items-center animate-in slide-in-from-left-2 duration-300">
+                                                    <div className="w-full md:w-auto flex items-center justify-between md:justify-start gap-3 flex-1">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="bg-blue-100 text-blue-700 font-bold px-3 py-1.5 rounded text-sm text-center min-w-[100px]">
+                                                                {selection.date}
+                                                            </div>
+                                                            <span className="text-xs text-gray-500 hidden md:inline">
+                                                                {new Date(selection.date).toLocaleDateString('en-US', { weekday: 'long' })}
+                                                            </span>
                                                         </div>
-                                                        <span className="text-xs text-gray-500 hidden md:inline">
-                                                            {new Date(selection.date).toLocaleDateString('en-US', { weekday: 'long' })}
-                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDateSelect({ dateStr: selection.date })}
+                                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors md:hidden"
+                                                        >
+                                                            <X size={16} />
+                                                        </button>
                                                     </div>
                                                     <div className="flex items-center gap-2 w-full md:w-auto">
-                                                        <div className="flex flex-col">
+                                                        <div className="flex flex-col flex-1 text-center md:text-left">
                                                             <input
                                                                 type="time"
-                                                                className="bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm outline-none focus:border-blue-500 text-gray-900"
+                                                                className="bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-500 text-gray-900 w-full"
                                                                 value={selection.timeStart}
                                                                 onChange={(e) => updateTime(selection.date, 'timeStart', e.target.value)}
                                                             />
                                                         </div>
-                                                        <span className="text-gray-300">-</span>
-                                                        <div className="flex flex-col">
+                                                        <span className="text-gray-400 font-medium">-</span>
+                                                        <div className="flex flex-col flex-1 text-center md:text-left">
                                                             <input
                                                                 type="time"
-                                                                className="bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm outline-none focus:border-blue-500 text-gray-900"
+                                                                className="bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-500 text-gray-900 w-full"
                                                                 value={selection.timeEnd}
                                                                 onChange={(e) => updateTime(selection.date, 'timeEnd', e.target.value)}
                                                             />
@@ -472,7 +628,7 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
                                                     <button
                                                         type="button"
                                                         onClick={() => handleDateSelect({ dateStr: selection.date })}
-                                                        className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                        className="hidden md:block p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                                                     >
                                                         <X size={16} />
                                                     </button>
@@ -495,7 +651,7 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
                                 )}
 
                                 {/* Setup Date (Remaining Inputs...) */}
-                                <div className="grid grid-cols-2 gap-4 mt-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                     <div>
                                         <label className="block text-sm font-bold text-gray-700 mb-1">Setup Date</label>
                                         <input type="date" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 text-gray-900" value={formData.setupDate} onChange={e => setFormData({ ...formData, setupDate: e.target.value })} />
@@ -503,8 +659,9 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
                                     <div>
                                         <label className="block text-sm font-bold text-gray-700 mb-1">Setup Time</label>
                                         <div className="flex gap-2">
-                                            <input type="time" className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none text-gray-900" value={formData.setupTimeStart} onChange={e => setFormData({ ...formData, setupTimeStart: e.target.value })} />
-                                            <input type="time" className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none text-gray-900" value={formData.setupTimeEnd} onChange={e => setFormData({ ...formData, setupTimeEnd: e.target.value })} />
+                                            <input type="time" className="w-full flex-1 px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none text-gray-900" value={formData.setupTimeStart} onChange={e => setFormData({ ...formData, setupTimeStart: e.target.value })} />
+                                            <span className="text-gray-400 font-medium self-center">-</span>
+                                            <input type="time" className="w-full flex-1 px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none text-gray-900" value={formData.setupTimeEnd} onChange={e => setFormData({ ...formData, setupTimeEnd: e.target.value })} />
                                         </div>
                                     </div>
                                 </div>
@@ -582,7 +739,7 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
                     </div>
 
                     {/* RIGHT PANEL: INFO ONLY */}
-                    <div className="w-[350px] bg-gray-50 p-6 flex flex-col gap-6 overflow-y-auto border-l border-gray-200 hidden lg:flex">
+                    <div className="w-[350px] bg-gray-50 p-6 overflow-y-auto border-l border-gray-200 hidden lg:block custom-scrollbar">
                         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                             <div className="h-48 bg-gray-200 relative">
                                 {imageUrl ? (
@@ -616,6 +773,93 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
                                         }</span>
                                     </div>
                                     <p className="text-[10px] text-gray-400 text-right mt-1">Based on {formData.dateSelections.length} days selected</p>
+                                </div>
+
+                                {/* Booking Summary */}
+                                <div className="mt-4 pt-4 border-t border-gray-200">
+                                    <h4 className="font-bold text-[#2d2d5f] mb-3 text-sm">Booking Summary</h4>
+                                    <div className="space-y-3 text-xs text-gray-700">
+                                        <div>
+                                            <span className="font-semibold block mb-0.5">Package:</span>
+                                            <div className="pl-2 space-y-0.5">
+                                                {(facility.inclusions?.equipment?.length || 0) > 0 || (facility.inclusions?.rooms?.length || 0) > 0 ? (
+                                                    <>
+                                                        {facility.inclusions?.equipment?.map((eq: any) => (
+                                                            <div key={`eq-${eq.id}`}>• {eq.name} (Equipment)</div>
+                                                        ))}
+                                                        {facility.inclusions?.rooms?.map((rm: any) => (
+                                                            <div key={`rm-${rm.id}`}>• {rm.name} (Room)</div>
+                                                        ))}
+                                                    </>
+                                                ) : (
+                                                    <span className="text-gray-400 italic">No inclusions available for this facility</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <span className="font-semibold block mb-0.5">Other Inclusions:</span>
+                                            <div className="pl-2 space-y-0.5">
+                                                {formData.selectedEquipment.length > 0 || formData.selectedRooms.length > 0 ? (
+                                                    <>
+                                                        {formData.selectedEquipment.map(id => {
+                                                            const eq = facility.inclusions?.equipment?.find((e: any) => e.id === id);
+                                                            return eq ? <div key={`eq-${id}`}>• {eq.name} (Equipment)</div> : null;
+                                                        })}
+                                                        {formData.selectedRooms.map(id => {
+                                                            const rm = facility.inclusions?.rooms?.find((r: any) => r.id === id);
+                                                            return rm ? <div key={`rm-${id}`}>• {rm.name} (Room)</div> : null;
+                                                        })}
+                                                    </>
+                                                ) : (
+                                                    <span className="text-gray-400 italic">No additional inclusions selected</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <span className="font-semibold block">Group/Organization: </span>
+                                            <span className="pl-2 block mt-0.5">{formData.organization || <span className="text-gray-400 italic">Not provided</span>}</span>
+                                        </div>
+
+                                        <div>
+                                            <span className="font-semibold block">Purpose:</span>
+                                            <div className="pl-2 mt-0.5 line-clamp-2" title={formData.purpose}>
+                                                {formData.purpose || <span className="text-gray-400 italic">Not provided</span>}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <span className="font-semibold block">Setup Date:</span>
+                                            <div className="pl-2 mt-0.5">
+                                                {formData.setupDate ? (
+                                                    <span>
+                                                        {new Date(formData.setupDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                        {(formData.setupTimeStart || formData.setupTimeEnd) && (
+                                                            <> ({formData.setupTimeStart || "TBD"} - {formData.setupTimeEnd || "TBD"})</>
+                                                        )}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-400 italic">None</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <span className="font-semibold block">Date Booked:</span>
+                                            <div className="pl-2 mt-0.5 space-y-0.5">
+                                                {formData.dateSelections.length > 0 ? (
+                                                    formData.dateSelections.map((sel, idx) => (
+                                                        <div key={idx}>
+                                                            {new Date(sel.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} ({sel.timeStart} - {sel.timeEnd})
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-gray-400 italic">No dates selected</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -764,7 +1008,34 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
                     )
                 }
 
+                <StatusModal
+                    isOpen={showSuccessModal}
+                    onClose={() => setShowSuccessModal(false)}
+                    status="success"
+                    title="Booking Submitted!"
+                    message="Your booking request has been submitted successfully."
+                    actionLabel="Okay"
+                    onAction={handleSuccessAction}
+                />
             </div >
+            {/* Warning Modal */}
+            {isWarningOpen && (
+                <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+                        <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                            <AlertTriangle size={24} className="text-amber-600" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-800 mb-2">Date Unavailable</h3>
+                        <p className="text-gray-600 mb-6 text-sm">{warningMsg}</p>
+                        <button
+                            onClick={() => setIsWarningOpen(false)}
+                            className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg transition-colors"
+                        >
+                            Understood
+                        </button>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }

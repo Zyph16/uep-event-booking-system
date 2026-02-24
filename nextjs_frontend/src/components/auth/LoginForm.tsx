@@ -43,6 +43,10 @@ export default function LoginForm() {
             localStorage.setItem("token", result.token);
             localStorage.setItem("user", JSON.stringify(result.user));
 
+            // Set expiry to 24 hours from now
+            const expiry = new Date().getTime() + (24 * 60 * 60 * 1000);
+            localStorage.setItem("tokenExpiry", expiry.toString());
+
             // Redirect based on role
             // Check if roleName exists, otherwise default to client/user
             const role = result.user.role_name || "CLIENT";

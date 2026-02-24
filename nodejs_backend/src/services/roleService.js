@@ -1,12 +1,12 @@
 const RoleRepository = require('../repositories/roleRepository');
 
 class RoleService {
-    static async createRole(name) {
+    static async createRole(name, roleSpecification) {
         const existing = await RoleRepository.findByName(name);
         if (existing) {
             throw new Error('Role already exists');
         }
-        return RoleRepository.create(name);
+        return RoleRepository.create(name, roleSpecification);
     }
 
     static async getAllRoles() {

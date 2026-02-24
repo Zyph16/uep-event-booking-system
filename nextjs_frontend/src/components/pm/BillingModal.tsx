@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { X, FileText, CreditCard, Send } from "lucide-react";
+import { getApiBaseUrl } from "@/utils/config";
+import FTCBillingStatement from "@/components/billing/FTC/FTCBillingStatement";
+import ACGBillingStatement from "@/components/billing/ACG/ACGBillingStatement";
 
 interface BillingModalProps {
     isOpen: boolean;
@@ -10,13 +13,15 @@ interface BillingModalProps {
     onSuccess: () => void;
 }
 
-const API_BASE = "http://192.168.1.31:5000/api";
+// const API_BASE = "http://localhost:5000/api";
 
 export default function BillingModal({ isOpen, onClose, booking, onSuccess }: BillingModalProps) {
     const [loading, setLoading] = useState(false);
     const [facilityPrice, setFacilityPrice] = useState(0);
     const [inclusions, setInclusions] = useState<any[]>([]);
     const [totalInclusions, setTotalInclusions] = useState(0);
+    const [billingTemplate, setBillingTemplate] = useState("default");
+    const [billingContext, setBillingContext] = useState<any>(null);
 
     useEffect(() => {
         if (isOpen && booking) {
@@ -25,15 +30,24 @@ export default function BillingModal({ isOpen, onClose, booking, onSuccess }: Bi
                     const token = localStorage.getItem("token");
 
                     // Fetch Billing Context (Prices)
-                    const res = await fetch(`${API_BASE}/bookings/${booking.bookingID}/billing-context`, {
+                    const res = await fetch(`${getApiBaseUrl()}/bookings/${booking.bookingID}/billing-context`, {
                         headers: { "Authorization": `Bearer ${token}` }
                     });
                     const data = await res.json();
 
                     setFacilityPrice(data.facility_price || 0);
-                    setInclusions(data.inclusions || []);
 
-                    const inclusionsTotal = (data.inclusions || []).reduce((acc: number, item: any) => acc + (Number(item.price) || 0), 0);
+                    // Combine equipment and rooms into a single list for the PM view (or keep them separate if needed, but here we flatten for the list)
+                    const combinedInclusions = [
+                        ...(data.inclusions?.equipment || []).map((e: any) => ({ ...e, name: e.equipment_name, type: 'Equipment' })),
+                        ...(data.inclusions?.rooms || []).map((r: any) => ({ ...r, name: r.room_name, type: 'Room' }))
+                    ];
+                    setInclusions(combinedInclusions);
+
+                    setBillingTemplate(data.billing_template || "default");
+                    setBillingContext(data);
+
+                    const inclusionsTotal = combinedInclusions.reduce((acc: number, item: any) => acc + (Number(item.price) || 0), 0);
                     setTotalInclusions(inclusionsTotal);
 
                 } catch (err) {
@@ -48,7 +62,7 @@ export default function BillingModal({ isOpen, onClose, booking, onSuccess }: Bi
         setLoading(true);
         try {
             const token = localStorage.getItem("token");
-            const res = await fetch(`${API_BASE}/billing`, {
+            const res = await fetch(`${getApiBaseUrl()}/billing`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`,
@@ -79,6 +93,108 @@ export default function BillingModal({ isOpen, onClose, booking, onSuccess }: Bi
     if (!isOpen || !booking) return null;
 
     const grandTotal = facilityPrice + totalInclusions;
+
+    const handlePrint = () => {
+        window.print();
+    };
+
+    // Prepare Data for Templates
+    const templateData = billingContext ? {
+        customer: billingContext.user_name || "Unknown",
+        address: billingContext.user_address || "N/A",
+        date: billingContext.created_at ? new Date(billingContext.created_at).toLocaleDateString() : "",
+        items: [
+            { description: `Facility Fee (${billingContext.facility_name})`, unitPrice: facilityPrice, amount: facilityPrice },
+            ...inclusions.map((item: any) => ({
+                description: item.name || item.equipment_name || item.room_name,
+                unitPrice: Number(item.price),
+                amount: Number(item.price)
+            }))
+        ],
+        total: grandTotal,
+        preparedBy: billingContext.project_manager || "Project Manager",
+        approvedBy: billingContext.university_president || "University President",
+        codeNo: booking.bookingID ? String(booking.bookingID) : "",
+        dateIssued: "",
+        issuedBy: "Authorized Officer"
+    } : null;
+
+    const isFTC = billingTemplate === 'ftc' || billingTemplate === 'default' || !billingTemplate;
+    const isACG = billingTemplate === 'acg';
+
+    if (isFTC && templateData) {
+        return (
+            <>
+                <div className={`fixed inset-0 z-[1050] flex items-center justify-center p-4 transition-all duration-300 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"} print:hidden`}>
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
+                    <div className="bg-white w-full max-w-[900px] h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col relative z-10">
+                        {/* Header */}
+                        <div className="px-6 py-4 bg-gray-900 text-white flex justify-between items-center">
+                            <h2 className="text-lg font-bold">Generate Billing (FTC Layout)</h2>
+                            <button onClick={onClose}><X size={24} /></button>
+                        </div>
+
+                        {/* Preview Area */}
+                        <div className="flex-1 overflow-y-auto bg-gray-100 p-8">
+                            <div className="shadow-lg">
+                                <FTCBillingStatement billingData={templateData} />
+                            </div>
+                        </div>
+
+                        {/* Footer Actions */}
+                        <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+                            <button onClick={onClose} className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg">Cancel</button>
+                            <button onClick={handlePrint} className="px-4 py-2 bg-gray-800 text-white font-bold rounded-lg hover:bg-gray-900">Print Preview</button>
+                            <button onClick={handleSendBilling} disabled={loading} className="px-4 py-2 bg-[#e91e63] text-white font-bold rounded-lg hover:bg-[#c2185b] flex items-center gap-2">
+                                {loading ? "Sending..." : <><Send size={16} /> Send Billing</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {/* Print Only View */}
+                <div className="hidden print:block fixed inset-0 bg-white z-[2000]">
+                    <FTCBillingStatement billingData={templateData} />
+                </div>
+            </>
+        );
+    }
+
+    if (isACG && templateData) {
+        return (
+            <>
+                <div className={`fixed inset-0 z-[1050] flex items-center justify-center p-4 transition-all duration-300 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"} print:hidden`}>
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
+                    <div className="bg-white w-full max-w-[900px] h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col relative z-10">
+                        {/* Header */}
+                        <div className="px-6 py-4 bg-gray-900 text-white flex justify-between items-center">
+                            <h2 className="text-lg font-bold">Generate Billing (ACG Layout)</h2>
+                            <button onClick={onClose}><X size={24} /></button>
+                        </div>
+
+                        {/* Preview Area */}
+                        <div className="flex-1 overflow-y-auto bg-gray-100 p-8">
+                            <div className="shadow-lg">
+                                <ACGBillingStatement billingData={templateData} />
+                            </div>
+                        </div>
+
+                        {/* Footer Actions */}
+                        <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+                            <button onClick={onClose} className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg">Cancel</button>
+                            <button onClick={handlePrint} className="px-4 py-2 bg-gray-800 text-white font-bold rounded-lg hover:bg-gray-900">Print Preview</button>
+                            <button onClick={handleSendBilling} disabled={loading} className="px-4 py-2 bg-[#e91e63] text-white font-bold rounded-lg hover:bg-[#c2185b] flex items-center gap-2">
+                                {loading ? "Sending..." : <><Send size={16} /> Send Billing</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {/* Print Only View */}
+                <div className="hidden print:block fixed inset-0 bg-white z-[2000]">
+                    <ACGBillingStatement billingData={templateData} />
+                </div>
+            </>
+        );
+    }
 
     return (
         <div className={`fixed inset-0 z-[1050] flex items-center justify-center p-4 transition-all duration-300 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}>

@@ -2,6 +2,14 @@ const FacilityService = require('../services/facilityService');
 const path = require('path');
 const fs = require('fs');
 
+const logError = (msg) => {
+    try {
+        fs.appendFileSync('backend-error.log', new Date().toISOString() + ' ' + msg + '\n');
+    } catch (e) {
+        console.error("Logging failed", e);
+    }
+};
+
 class FacilityController {
     static async findAll(req, res) {
         try {
@@ -28,12 +36,18 @@ class FacilityController {
                     imagepath: arr.imagepath,
                     price: arr.price,
                     equipment_included: arr.equipment_names,
-                    rooms_included: arr.room_names
+                    rooms_included: arr.room_names,
+                    inclusions: {
+                        equipment: arr.equipment_details || [],
+                        rooms: arr.room_details || []
+                    },
+                    albums: arr.albums || []
                 };
             });
 
             res.json({ facilities: publicData });
         } catch (e) {
+            logError("getPublicFacilities ERROR: " + e.stack);
             res.status(500).json({ error: e.message });
         }
     }
@@ -115,6 +129,64 @@ class FacilityController {
             if (!deleted) return res.status(404).json({ error: 'Delete failed' });
             res.json({ message: 'Deleted successfully' });
         } catch (e) {
+            res.status(500).json({ error: e.message });
+        }
+    }
+
+    // --- Facility Albums (Folders) and Images ---
+
+    static async createAlbum(req, res) {
+        const facilityId = parseInt(req.params.id);
+        const { name } = req.body;
+        if (!name) return res.status(400).json({ error: 'Album name is required' });
+
+        try {
+            const album = await FacilityService.createAlbum(facilityId, name);
+            res.status(201).json({ message: 'Album created successfully', album });
+        } catch (e) {
+            console.error("Create album error:", e.message);
+            res.status(500).json({ error: e.message });
+        }
+    }
+
+    static async deleteAlbum(req, res) {
+        const albumId = parseInt(req.params.albumId);
+        try {
+            const deleted = await FacilityService.deleteAlbum(albumId);
+            if (!deleted) return res.status(404).json({ error: 'Album not found or delete failed' });
+            res.json({ message: 'Album deleted successfully' });
+        } catch (e) {
+            console.error("Delete album error:", e.message);
+            res.status(500).json({ error: e.message });
+        }
+    }
+
+    static async uploadImageToAlbum(req, res) {
+        const albumId = parseInt(req.params.albumId);
+        if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'No images provided' });
+
+        try {
+            const newImages = [];
+            for (const file of req.files) {
+                const imagePath = '/uploads/facilities/' + file.filename;
+                const newImage = await FacilityService.addImageToAlbum(albumId, imagePath);
+                newImages.push(newImage);
+            }
+            res.status(201).json({ message: 'Images added to album', images: newImages });
+        } catch (e) {
+            console.error("Upload album images error:", e.message);
+            res.status(500).json({ error: e.message });
+        }
+    }
+
+    static async deleteImage(req, res) {
+        const imageId = parseInt(req.params.imageId);
+        try {
+            const deleted = await FacilityService.deleteImage(imageId);
+            if (!deleted) return res.status(404).json({ error: 'Image not found or delete failed' });
+            res.json({ message: 'Image deleted successfully' });
+        } catch (e) {
+            console.error("Delete image error:", e.message);
             res.status(500).json({ error: e.message });
         }
     }

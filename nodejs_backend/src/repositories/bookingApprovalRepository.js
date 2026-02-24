@@ -1,33 +1,34 @@
 const { pool } = require('../core/database');
 
 class BookingApprovalRepository {
-    static async create(data) {
-        await pool.query(`
+  static async create(data, connection = null) {
+    const db = connection || pool;
+    await db.query(`
       INSERT INTO booking_approvals (booking_id, approver_id, approval_stage, approver_role, decision, remarks)
       VALUES (?, ?, ?, ?, ?, ?)
     `, [
-            data.booking_id,
-            data.approver_id,
-            data.approval_stage,
-            data.approver_role,
-            data.decision,
-            data.remarks || null
-        ]);
-    }
+      data.booking_id,
+      data.approver_id,
+      data.approval_stage,
+      data.approver_role,
+      data.decision,
+      data.remarks || null
+    ]);
+  }
 
-    static async findByBookingId(bookingId) {
-        const [rows] = await pool.query(`
+  static async findByBookingId(bookingId) {
+    const [rows] = await pool.query(`
       SELECT ba.*, u.username as approver_name 
       FROM booking_approvals ba
       LEFT JOIN users u ON ba.approver_id = u.id
       WHERE ba.booking_id = ?
       ORDER BY ba.created_at ASC
     `, [bookingId]);
-        return rows;
-    }
+    return rows;
+  }
 
-    static async findAll() {
-        const [rows] = await pool.query(`
+  static async findAll() {
+    const [rows] = await pool.query(`
       SELECT 
         ba.approval_id,
         ba.booking_id,
@@ -45,8 +46,8 @@ class BookingApprovalRepository {
       LEFT JOIN facilities f ON b.facilityID = f.facilityID
       ORDER BY ba.created_at DESC
     `);
-        return rows;
-    }
+    return rows;
+  }
 }
 
 module.exports = BookingApprovalRepository;

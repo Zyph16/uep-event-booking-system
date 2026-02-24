@@ -10,8 +10,10 @@ import {
     FileText
 } from "lucide-react";
 import PresidentBookingDetailModal from "@/components/president/PresidentBookingDetailModal";
+import { getApiBaseUrl } from "@/utils/config";
 
-const API_BASE = "http://192.168.1.31:5000/api";
+const API_BASE = getApiBaseUrl();
+// const API_BASE = getApiBaseUrl();
 
 export default function PresidentReports() {
     const [bookings, setBookings] = useState<any[]>([]);
@@ -28,10 +30,10 @@ export default function PresidentReports() {
             const token = localStorage.getItem("token");
             if (!token) return;
 
-            const res = await fetch(`${API_BASE}/bookings/details`, {
+            const response = await fetch(`${getApiBaseUrl()}/bookings/details`, {
                 headers: { "Authorization": `Bearer ${token}` }
             });
-            const data = await res.json();
+            const data = await response.json();
             const allBookings = data.bookings || [];
 
             // Filter for Finalized Status (Approved, Rejected, Cancelled)

@@ -189,13 +189,35 @@ class BookingController {
             // OR check if item has user_id.
             // To be safe and consistent:
             const booking = await BookingService.getById(id);
-            if (booking && !privilegedRoles.includes(parseInt(user.role_id)) && booking.user_id !== user.id) {
+            if (booking && !privilegedRoles.includes(parseInt(user.role_id)) && booking.userID !== user.id) {
                 return res.status(403).json({ error: 'Forbidden' });
             }
 
             res.json(item);
         } catch (e) {
             res.status(500).json({ error: e.message });
+        }
+    }
+
+    // POST /bookings/:id/upload-receipt
+    static async uploadReceipt(req, res) {
+        const id = parseInt(req.params.id);
+        try {
+            const user = req.user;
+            if (!req.file) {
+                return res.status(400).json({ error: 'No file uploaded' });
+            }
+
+            const receiptUrl = `/uploads/receipts/${req.file.filename}`;
+
+            // The service should verify ownership and update the booking
+            const item = await BookingService.uploadReceipt(id, user.id, receiptUrl, user.role_id);
+
+            res.json({ message: 'Receipt uploaded successfully', booking: item.toArray ? item.toArray() : item });
+        } catch (e) {
+            // If there's an error, we might want to clean up the uploaded file, but multer already saved it.
+            // For now, return the error.
+            res.status(400).json({ error: e.message });
         }
     }
 }

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Upload, Trash2, Edit2 } from "lucide-react";
 import Modal from "@/components/shared/Modal";
+import { getBackendUrl } from "@/utils/config";
 
 interface FacilityModalProps {
     isOpen: boolean;
@@ -37,6 +38,7 @@ export default function FacilityModal({
     const [facCapacity, setFacCapacity] = useState("");
     const [facPrice, setFacPrice] = useState("");
     const [facStatus, setFacStatus] = useState("available");
+    const [facBillingTemplate, setFacBillingTemplate] = useState("default");
     const [facImage, setFacImage] = useState<File | null>(null);
     const [facImagePreview, setFacImagePreview] = useState<string>("");
     const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
@@ -64,14 +66,16 @@ export default function FacilityModal({
                 setFacLocation(facilityToEdit.location);
                 setFacCapacity(facilityToEdit.capacity);
                 setFacPrice(facilityToEdit.price);
+                setFacPrice(facilityToEdit.price);
                 setFacStatus(facilityToEdit.status);
+                setFacBillingTemplate(facilityToEdit.billing_template || "default");
 
                 // Image
                 if (facilityToEdit.imagepath) {
                     setFacImagePreview(
                         facilityToEdit.imagepath.startsWith('http')
                             ? facilityToEdit.imagepath
-                            : `http://192.168.1.31:5000${facilityToEdit.imagepath}`
+                            : `${getBackendUrl()}${facilityToEdit.imagepath}`
                     );
                 } else {
                     setFacImagePreview("");
@@ -98,7 +102,9 @@ export default function FacilityModal({
                 setFacLocation("");
                 setFacCapacity("");
                 setFacPrice("");
+                setFacPrice("");
                 setFacStatus("available");
+                setFacBillingTemplate("default");
                 setFacImage(null);
                 setFacImagePreview("");
                 setSelectedEquipment([]);
@@ -124,6 +130,7 @@ export default function FacilityModal({
         formData.append("capacity", facCapacity);
         formData.append("price", facPrice);
         formData.append("status", facStatus);
+        formData.append("billing_template", facBillingTemplate);
 
         if (selectedEquipment.length === 0) {
             formData.append("equipment[]", "EMPTY");
@@ -293,6 +300,16 @@ export default function FacilityModal({
                                         >
                                             <option value="available">Available</option>
                                             <option value="unavailable">Unavailable</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Billing Layout</label>
+                                        <select className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                            value={facBillingTemplate} onChange={e => setFacBillingTemplate(e.target.value)}
+                                        >
+                                            <option value="default">Default Receipt</option>
+                                            <option value="ftc">Farmer's Training Center (FTC)</option>
+                                            <option value="acg">UEP Gymnatorium (ACG)</option>
                                         </select>
                                     </div>
                                 </div>

@@ -14,6 +14,7 @@ class BookingRepository {
         u.username,
         pi.email,
         r.name as user_role,
+        r.role_specification as user_role_specification,
         COALESCE(pi.fname, '') as first_name,
         COALESCE(pi.lname, '') as last_name,
         COALESCE(pi.phone, '') as phone,
@@ -21,13 +22,13 @@ class BookingRepository {
         pi.city,
         pi.province,
         f.facility_name,
-        bl.billing_id as billing_exists
+        b.receipt_url,
+        (SELECT COUNT(*) FROM billings WHERE booking_id = b.bookingID) > 0 as billing_exists
       FROM bookings b
       LEFT JOIN users u ON b.userID = u.id
       LEFT JOIN roles r ON u.role_id = r.id
       LEFT JOIN personal_info pi ON u.id = pi.userID
       LEFT JOIN facilities f ON b.facilityID = f.facilityID
-      LEFT JOIN billings bl ON b.bookingID = bl.booking_id
       ORDER BY b.created_at DESC
     `;
         const [rows] = await pool.query(sql);
@@ -53,6 +54,7 @@ class BookingRepository {
                 user_phone: row.phone || '',
                 user_address: addrParts.join(', '),
                 user_role: row.user_role || 'Unknown',
+                user_role_specification: row.user_role_specification || 'Regular Account',
                 facility_name: row.facility_name || 'Unknown Facility',
                 organization: row.organization,
                 purpose: row.purpose,
@@ -65,7 +67,8 @@ class BookingRepository {
                 created_at: row.created_at,
                 facility_fee: ff,
                 equipment_fee: ef,
-                has_billing: (ff + ef) > 0,
+                has_billing: row.billing_exists, // Use Boolean from subquery
+                receipt_url: row.receipt_url || null,
                 setup_date_start: row.setup_date_start || null,
                 setup_date_end: row.setup_date_end || null,
                 setup_time_start: row.setup_time_start || null,
@@ -74,14 +77,15 @@ class BookingRepository {
         });
     }
 
-    static async findById(id) {
-        const [rows] = await pool.query('SELECT * FROM bookings WHERE bookingID = ?', [id]);
+    static async findById(id, connection = null) {
+        const db = connection || pool;
+        const [rows] = await db.query('SELECT * FROM bookings WHERE bookingID = ?', [id]);
         if (rows.length === 0) return null;
 
         const booking = Booking.fromRow(rows[0]);
 
         // Fetch Schedule
-        const [schedule] = await pool.query(
+        const [schedule] = await db.query(
             'SELECT * FROM booking_schedules WHERE booking_id = ? ORDER BY date ASC, time_start ASC',
             [id]
         );
@@ -198,6 +202,7 @@ class BookingRepository {
                 time_end: row.time_end,
                 status: row.status,
                 created_at: row.created_at,
+                receipt_url: row.receipt_url || null,
                 facility_fee: parseFloat(row.facility_fee || 0),
                 equipment_fee: parseFloat(row.equipment_fee || 0),
                 has_billing: (parseFloat(row.facility_fee || 0) + parseFloat(row.equipment_fee || 0)) > 0,
@@ -207,23 +212,42 @@ class BookingRepository {
                 university_president: null
             };
 
-            // Equipment
+            // Equipment (Booked + Facility Default)
             const [eqRows] = await pool.query(`
             SELECT e.equipment_name 
             FROM booking_equipment be 
             JOIN equipment e ON be.equipmentID = e.equipmentID 
             WHERE be.bookingID = ?
-        `, [bid]);
+            UNION
+            SELECT e.equipment_name
+            FROM facility_equipment fe
+            JOIN equipment e ON fe.equipmentID = e.equipmentID
+            WHERE fe.facilityID = ?
+        `, [bid, row.facilityID]);
             booking.equipment_inclusions = eqRows.map(r => r.equipment_name);
 
-            // Rooms
+            // Rooms (Booked + Facility Default)
             const [rmRows] = await pool.query(`
             SELECT r.room_name 
             FROM booking_rooms br 
             JOIN room r ON br.roomID = r.roomID 
             WHERE br.bookingID = ?
-        `, [bid]);
+            UNION
+            SELECT r.room_name
+            FROM facility_room fr
+            JOIN room r ON fr.roomID = r.roomID
+            WHERE fr.facilityID = ?
+        `, [bid, row.facilityID]);
             booking.room_inclusions = rmRows.map(r => r.room_name);
+
+            // Schedule (New)
+            const [schedRows] = await pool.query(`
+                SELECT date, time_start, time_end 
+                FROM booking_schedules 
+                WHERE booking_id = ? 
+                ORDER BY date ASC, time_start ASC
+            `, [bid]);
+            booking.schedule = schedRows;
 
             // Project Manager
             const [pmRows] = await pool.query(`
@@ -262,7 +286,7 @@ class BookingRepository {
         return bookings;
     }
 
-    static async update(id, data) {
+    static async update(id, data, connection = null) {
         const fields = [
             'userID', 'facilityID', 'organization', 'purpose',
             'date_requested', 'date_start', 'date_end',
@@ -280,15 +304,17 @@ class BookingRepository {
             }
         }
 
-        if (set.length === 0) return this.findById(id);
+        if (set.length === 0) return this.findById(id, connection);
 
         values.push(id);
-        await pool.query(`UPDATE bookings SET ${set.join(', ')} WHERE bookingID = ?`, values);
-        return this.findById(id);
+        const db = connection || pool;
+        await db.query(`UPDATE bookings SET ${set.join(', ')} WHERE bookingID = ?`, values);
+        return this.findById(id, connection);
     }
 
-    static async updateStatus(id, newStatus, expectedOldStatus) {
-        const [result] = await pool.query(
+    static async updateStatus(id, newStatus, expectedOldStatus, connection = null) {
+        const db = connection || pool;
+        const [result] = await db.query(
             'UPDATE bookings SET status = ? WHERE bookingID = ? AND status = ?',
             [newStatus, id, expectedOldStatus]
         );
@@ -300,15 +326,33 @@ class BookingRepository {
         return result.affectedRows > 0;
     }
 
-    static async getBillingContext(id) {
-        const [rows] = await pool.query(`
+    static async updateReceipt(id, receiptUrl, status = null, connection = null) {
+        const db = connection || pool;
+        const setQuery = status ? 'receipt_url = ?, status = ?' : 'receipt_url = ?';
+        const params = status ? [receiptUrl, status, id] : [receiptUrl, id];
+
+        const [result] = await db.query(
+            `UPDATE bookings SET ${setQuery} WHERE bookingID = ?`,
+            params
+        );
+        return result.affectedRows > 0;
+    }
+
+    static async getBillingContext(id, connection = null) {
+        const db = connection || pool;
+        const [rows] = await db.query(`
         SELECT 
             b.*, 
             f.facility_name, 
             f.price as facility_price,
+            f.billing_template,
             u.username,
             pi.fname,
-            pi.lname
+            pi.lname,
+            pi.street,
+            pi.city,
+            pi.barangay,
+            pi.province
         FROM bookings b
         LEFT JOIN facilities f ON b.facilityID = f.facilityID
         LEFT JOIN users u ON b.userID = u.id
@@ -323,8 +367,12 @@ class BookingRepository {
         let full = (booking.fname + ' ' + booking.lname).trim();
         booking.user_name = full || booking.username || 'Unknown User';
 
+        // User Address
+        const addrParts = [booking.street, booking.barangay, booking.city, booking.province].filter(Boolean);
+        booking.user_address = addrParts.join(', ') || 'N/A';
+
         // Equipment
-        const [eqRows] = await pool.query(`
+        const [eqRows] = await db.query(`
         SELECT e.equipment_name, e.price
         FROM booking_equipment be
         JOIN equipment e ON be.equipmentID = e.equipmentID
@@ -332,7 +380,7 @@ class BookingRepository {
     `, [id]);
 
         // Rooms
-        const [rmRows] = await pool.query(`
+        const [rmRows] = await db.query(`
         SELECT r.room_name, r.price
         FROM booking_rooms br
         JOIN room r ON br.roomID = r.roomID
@@ -345,18 +393,44 @@ class BookingRepository {
         };
 
         // PM, President fetches similar to findByUserId
-        const [pmRows] = await pool.query(`
+        // Modified to fetch assigned facility manager from user_facilities
+        const [pmRows] = await db.query(`
              SELECT u.username, pi.fname, pi.lname
-             FROM booking_approvals ba
-             JOIN users u ON ba.approver_id = u.id
+             FROM user_facilities uf
+             JOIN users u ON uf.user_id = u.id
              LEFT JOIN personal_info pi ON u.id = pi.userID
-             WHERE ba.booking_id = ? 
-               AND (ba.approver_role = 'PROJECT MANAGER' OR ba.approval_stage LIKE 'Initial%')
-             ORDER BY ba.approval_id DESC LIMIT 1
-    `, [id]);
-        booking.project_manager = pmRows.length ? ((pmRows[0].fname + ' ' + pmRows[0].lname).trim() || pmRows[0].username) : null;
+             WHERE uf.facility_id = ?
+             LIMIT 1
+        `, [booking.facilityID]);
 
-        const [presRows] = await pool.query(`
+        // If no assigned manager, fall back to approver logic? Or just leave null?
+        // User request: "reflect the name of the project manager assigned to the facility"
+        // So we prioritize the assigned manager.
+
+        let assignedPM = null;
+        if (pmRows.length > 0) {
+            assignedPM = (pmRows[0].fname + ' ' + pmRows[0].lname).trim() || pmRows[0].username;
+        }
+
+        // Fallback to approver if no assigned manager found (optional, but good for safety)
+        if (!assignedPM) {
+            const [approverRows] = await db.query(`
+                 SELECT u.username, pi.fname, pi.lname
+                 FROM booking_approvals ba
+                 JOIN users u ON ba.approver_id = u.id
+                 LEFT JOIN personal_info pi ON u.id = pi.userID
+                 WHERE ba.booking_id = ? 
+                   AND (ba.approver_role = 'PROJECT MANAGER' OR ba.approval_stage LIKE 'Initial%')
+                 ORDER BY ba.approval_id DESC LIMIT 1
+            `, [id]);
+            if (approverRows.length > 0) {
+                assignedPM = (approverRows[0].fname + ' ' + approverRows[0].lname).trim() || approverRows[0].username;
+            }
+        }
+
+        booking.project_manager = assignedPM;
+
+        const [presRows] = await db.query(`
              SELECT u.username, pi.fname, pi.lname
              FROM booking_approvals ba
              JOIN users u ON ba.approver_id = u.id
@@ -402,7 +476,7 @@ class BookingRepository {
         return rows;
     }
 
-    static async findOverlaps(facilityId, dateStart, dateEnd, timeStart, timeEnd, setupDateStart = null, setupDateEnd = null, setupTimeStart = null, setupTimeEnd = null) {
+    static async findOverlaps(facilityId, dateStart, dateEnd, timeStart, timeEnd, setupDateStart = null, setupDateEnd = null, setupTimeStart = null, setupTimeEnd = null, connection = null) {
         const sEnd = setupDateEnd || setupDateStart;
         const stStart = setupTimeStart || '00:00';
         const stEnd = setupTimeEnd || '23:59';
@@ -455,7 +529,8 @@ class BookingRepository {
           )
     `;
 
-        const [rows] = await pool.query(sql, [
+        const db = connection || pool;
+        const [rows] = await db.query(sql, [
             facilityId,
             dateStart, dateEnd, timeEnd, timeStart,
             setupDateStart, setupDateStart, sEnd, stEnd, stStart, // Note param order for query parts

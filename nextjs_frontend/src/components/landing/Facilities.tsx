@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
+// import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, MapPin, Users } from "lucide-react";
+
+import { getApiBaseUrl, getBackendUrl } from "@/utils/config";
 
 // Types
 interface Facility {
@@ -15,7 +17,7 @@ interface Facility {
     status?: string;
 }
 
-const API_BASE_URL = "/uep-event-booking/uepeventorg_backend/public";
+// const API_BASE_URL = "/uep-event-booking/uepeventorg_backend/public";
 
 // Mock Data (Fallback)
 const MOCK_FACILITIES: Facility[] = [
@@ -77,46 +79,32 @@ export default function Facilities() {
     useEffect(() => {
         const fetchFacilities = async () => {
             try {
-                // Dynamically get the hostname (localhost or IP) to ensure it works on mobile
-                const hostname = window.location.hostname;
-                const response = await fetch(`http://${hostname}:5000/api/facilities/public`);
+                const response = await fetch(`${getApiBaseUrl()}/facilities/public`);
                 if (!response.ok) throw new Error("Failed to fetch facilities");
 
                 const data = await response.json();
 
                 // Map backend data to frontend interface
+                // Map backend data to frontend interface
                 const mappedFacilities = data.facilities.map((fac: any) => {
-                    // Use the backend provided imagepath filename (e.g., "1.jpg", "5.jpg")
-                    // If backend sends just "1.jpg", we map it to "/facilities/1.jpg"
-                    let relativePath = fac.imagepath || "1.jpg";
+                    // Backend now stores full relative path: /uploads/facilities/filename.jpg
+                    // or we might need to prepend it if it's just a filename (legacy)
+                    // But based on recent updates, it should be /uploads/facilities/...
 
-                    // Cleanup path if needed (e.g. remove leading slashes if we want to force our path)
-                    // But if it starts with http, keep it.
-                    let imagePath;
-
-                    if (relativePath.startsWith("http")) {
-                        imagePath = relativePath;
-                    } else {
-                        // Strip any potential leading paths if we want to force local facilities folder
-                        // relativePath = relativePath.split('/').pop(); 
-                        // Actually, let's just use it as is if it looks like a filename.
-                        // If it starts with /, assume it's absolute. If not, prepend /facilities/
-                        if (relativePath.startsWith("/")) {
-                            // If backend sends /uploads/..., we might need to handle that.
-                            // But user specifically said "use public/facilities". 
-                            // Let's assume the backend 'imagepath' field corresponds to the filenames in that folder.
-                            // For safety, let's extract the basename.
-                            const filename = relativePath.split(/[/\\]/).pop();
-                            imagePath = `/facilities/${filename}`;
-                        } else {
-                            imagePath = `/facilities/${relativePath}`;
-                        }
+                    let imagePath = fac.imagepath;
+                    if (imagePath && !imagePath.startsWith('http')) {
+                        // Ensure it starts with / if it doesn't
+                        const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+                        imagePath = `${getBackendUrl()}${cleanPath}`;
+                    } else if (!imagePath) {
+                        // Fallback image if null
+                        imagePath = "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&w=800&q=80";
                     }
 
                     return {
                         FacilityID: fac.facilityID,
                         FacilityName: fac.facility_name,
-                        location: fac.location,
+                        location: fac.location || "Campus",
                         capacity: fac.capacity,
                         image_path: imagePath,
                         status: fac.status
@@ -133,6 +121,17 @@ export default function Facilities() {
 
         fetchFacilities();
     }, []);
+
+    // Auto-slide effect
+    useEffect(() => {
+        if (facilities.length <= 1) return;
+
+        const interval = setInterval(() => {
+            nextSlide();
+        }, 4000); // 4 seconds
+
+        return () => clearInterval(interval);
+    }, [currentIndex, facilities.length]);
 
     const nextSlide = () => {
         setCurrentIndex((prev) => (prev + 1) % facilities.length);
@@ -246,11 +245,10 @@ export default function Facilities() {
                             }}
                         >
                             <div className="relative w-[90vw] md:w-full h-[320px] md:h-[400px] rounded-[24px] md:rounded-[55px] overflow-hidden shadow-2xl group cursor-pointer bg-white">
-                                <Image
+                                <img
                                     src={fac.image_path}
                                     alt={fac.FacilityName}
-                                    fill
-                                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                 />
                                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-5 md:p-8 pt-24 md:pt-32 text-white flex flex-col items-start">
                                     <h3 className="text-lg md:text-2xl font-bold mb-1 md:mb-2 shadow-black/50 drop-shadow-md">{fac.FacilityName}</h3>

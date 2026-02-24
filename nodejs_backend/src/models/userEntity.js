@@ -29,7 +29,7 @@ class UserEntity {
         user.roleName = row.role_name || null;
         user.firstName = row.fname || null;
         user.lastName = row.lname || null;
-        user.middleName = row.mname || null;
+        user.middleName = row.middle_name || null;
         return user;
     }
 

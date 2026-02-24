@@ -139,6 +139,7 @@ export default function UserModal({
                             onChange={e => setRole(e.target.value)}
                             required
                         >
+                            <option value="" disabled>Select a role...</option>
                             {/* Static Common Roles */}
                             <option value="Admin">Admin</option>
                             <option value="Project Manager">Project Manager</option>

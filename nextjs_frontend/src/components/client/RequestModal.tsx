@@ -73,7 +73,7 @@ export default function RequestModal({ isOpen, onClose, booking }: RequestModalP
     ];
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 print:p-0 print:bg-white print:static print:block">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4 print:p-0 print:bg-white print:static print:block">
             {/* Modal Content - mimics "report-paper" */}
             <div className="bg-white w-full max-w-[800px] max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl p-12 print:shadow-none print:w-full print:max-w-none print:h-auto print:overflow-visible print:rounded-none relative">
 
@@ -98,7 +98,15 @@ export default function RequestModal({ isOpen, onClose, booking }: RequestModalP
                     <div className="flex justify-between items-center px-4 mb-4">
                         <div className="w-[80px]">
                             {/* Placeholder for UEP Logo */}
-                            <div className="w-[80px] h-[80px] border border-gray-200 rounded-full flex items-center justify-center text-xs text-gray-400">UEP Logo</div>
+                            <div className=" w-[80px] h-[80px]  flex items-center justify-center text-xs text-gray-400">
+                                <Image
+                                    src="/images/uep_logo.png"
+                                    alt="UEP Logo"
+                                    width={80}
+                                    height={80}
+                                    className="object-contain h-20 w-auto"
+                                />
+                            </div>
                         </div>
                         <div className="flex-1 text-center font-sans">
                             <h5 className="text-[12px] font-normal m-0">Republic of the Philippines</h5>
@@ -107,8 +115,24 @@ export default function RequestModal({ isOpen, onClose, booking }: RequestModalP
                             <p className="text-[11px] mt-1">Web: uep.edu.ph &nbsp;&nbsp; Email: uep@edu.ph</p>
                         </div>
                         <div className="flex gap-2 w-[170px] justify-end">
-                            <div className="w-[80px] h-[80px] border border-gray-200 flex items-center justify-center text-xs text-gray-400">ISO</div>
-                            <div className="w-[80px] h-[80px] border border-gray-200 rounded-full flex items-center justify-center text-xs text-gray-400">BP</div>
+                            <div className="w-[80px] h-[80px] flex items-center justify-center text-xs text-gray-400">
+                                <Image
+                                    src="/images/socotec.png"
+                                    alt="UEP Logo"
+                                    width={80}
+                                    height={80}
+                                    className="object-contain h-20 w-auto"
+                                />
+                            </div>
+                            <div className="w-[80px] h-[80px]  flex items-center justify-center text-xs text-gray-400">
+                                <Image
+                                    src="/images/Bagong_Pilipinas_logo.png"
+                                    alt="UEP Logo"
+                                    width={80}
+                                    height={80}
+                                    className="object-contain h-20 w-auto"
+                                />
+                            </div>
                         </div>
                     </div>
 

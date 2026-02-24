@@ -6,14 +6,16 @@ import {
     Mail,
     Phone,
     Lock,
+    MapPin,
     Save,
     Camera,
     Building2,
-    Shield,
-    MapPin
+    Shield
 } from "lucide-react";
+import { getApiBaseUrl } from "@/utils/config";
 
-const API_BASE = "http://192.168.1.31:5000/api";
+// const API_BASE = "http://localhost:5000/api";
+const API_BASE = getApiBaseUrl();
 import * as PhilAddress from 'phil-reg-prov-mun-brgy';
 
 export default function PMProfile() {
@@ -69,7 +71,7 @@ export default function PMProfile() {
             setUser(parsedUser);
 
             // Fetch Personal Info
-            const res = await fetch(`${API_BASE}/personalinfo/me`, {
+            const res = await fetch(`${getApiBaseUrl()}/personalinfo/me`, {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             if (res.ok) {
@@ -376,8 +378,8 @@ export default function PMProfile() {
                                                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-600 appearance-none"
                                             >
                                                 <option value="">Select Province</option>
-                                                {provinces.map((p: any) => (
-                                                    <option key={p.prov_code} value={p.name}>{p.name}</option>
+                                                {provinces.map((p: any, idx: number) => (
+                                                    <option key={`prov-${p.prov_code}-${idx}`} value={p.name}>{p.name}</option>
                                                 ))}
                                             </select>
                                             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
@@ -397,8 +399,8 @@ export default function PMProfile() {
                                                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-600 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <option value="">Select City</option>
-                                                {cities.map((c: any) => (
-                                                    <option key={c.mun_code} value={c.name}>{c.name}</option>
+                                                {cities.map((c: any, idx: number) => (
+                                                    <option key={`city-${c.mun_code}-${idx}`} value={c.name}>{c.name}</option>
                                                 ))}
                                             </select>
                                             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
@@ -421,8 +423,8 @@ export default function PMProfile() {
                                                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-600 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <option value="">Select Barangay</option>
-                                                {barangays.map((b: any) => (
-                                                    <option key={b.name} value={b.name}>{b.name}</option>
+                                                {barangays.map((b: any, idx: number) => (
+                                                    <option key={`brgy-${b.name}-${idx}`} value={b.name}>{b.name}</option>
                                                 ))}
                                             </select>
                                             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">

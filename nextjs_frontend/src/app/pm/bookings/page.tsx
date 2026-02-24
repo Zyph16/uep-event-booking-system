@@ -12,8 +12,12 @@ import {
 } from "lucide-react";
 import BookingDetailModal from "@/components/pm/BookingDetailModal";
 import BillingModal from "@/components/pm/BillingModal";
+import ViewReceiptModal from "@/components/pm/ViewReceiptModal";
+import { getApiBaseUrl, getBackendUrl } from "@/utils/config";
+import Image from "next/image";
 
-const API_BASE = "http://192.168.1.31:5000/api";
+// const API_BASE = "http://localhost:5000/api";
+const API_BASE = getApiBaseUrl();
 
 export default function PMBookings() {
     const [bookings, setBookings] = useState<any[]>([]);
@@ -29,6 +33,8 @@ export default function PMBookings() {
     const [selectedBooking, setSelectedBooking] = useState<any>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isBillingOpen, setIsBillingOpen] = useState(false);
+    const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+    const [selectedReceiptUrl, setSelectedReceiptUrl] = useState<string | null>(null);
 
     const loadData = async () => {
         setLoading(true);
@@ -53,11 +59,11 @@ export default function PMBookings() {
                 pmFiltered = allBookings.filter((b: any) => allowed.includes(Number(b.facilityID)));
             }
 
-            // Initial Filter for Step 3 (President Reviewed) and Step 5 (Billing Signed)
+            // Initial Filter for Step 3 (President Reviewed), Step 5 (Billing Signed), and Payment Under Review
             const stepFiltered = pmFiltered.filter((b: any) => {
                 const s = b.status?.toLowerCase() || '';
-                // 'president reviewed - awaiting billing' or 'billing signed - awaiting payment'
-                return s.includes('president reviewed') || s.includes('billing signed');
+                // 'president reviewed - awaiting billing', 'billing signed - awaiting payment', 'payment under review'
+                return s.includes('president reviewed') || s.includes('billing signed') || s.includes('payment under review');
             });
 
             setBookings(stepFiltered);
@@ -224,6 +230,7 @@ export default function PMBookings() {
                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Setup Details</th>
                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Applicant</th>
                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Facility</th>
+                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Receipt</th>
                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Status</th>
                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-center">Action</th>
                             </tr>
@@ -236,7 +243,7 @@ export default function PMBookings() {
                             ) : (
                                 filteredBookings.map((b) => {
                                     const role = (b.user_role || "").toLowerCase();
-                                    const isPriority = role.includes("dean") || role.includes("council");
+                                    const isPriority = b.user_role_specification?.toLowerCase() === "university account";
                                     const status = b.status?.toLowerCase().replace(/_/g, ' ') || "";
 
                                     // Format Helpers
@@ -255,6 +262,15 @@ export default function PMBookings() {
                                     const hasSetup = b.setup_date_start;
                                     const setupDates = hasSetup ? (b.setup_date_start === b.setup_date_end ? formatDate(b.setup_date_start) : `${formatDate(b.setup_date_start)} - ${formatDate(b.setup_date_end)}`) : '-';
                                     const setupTime = hasSetup ? `${formatTime(b.setup_time_start)} - ${formatTime(b.setup_time_end)}` : '';
+
+                                    // Receipt
+                                    const receiptUrl = b.receipt_url;
+                                    let isPdf = false;
+                                    let fullReceiptUrl = '';
+                                    if (receiptUrl) {
+                                        isPdf = receiptUrl.toLowerCase().endsWith('.pdf');
+                                        fullReceiptUrl = receiptUrl.startsWith('http') ? receiptUrl : `${getBackendUrl()}${receiptUrl.startsWith('/') ? '' : '/'}${receiptUrl}`;
+                                    }
 
                                     return (
                                         <tr
@@ -294,7 +310,43 @@ export default function PMBookings() {
                                                 <span className="text-sm font-semibold text-gray-600">{b.facility_name}</span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${status === "pre approved" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+                                                {receiptUrl ? (
+                                                    <div
+                                                        className="w-16 h-16 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all relative group"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedBooking(b);
+                                                            setSelectedReceiptUrl(receiptUrl);
+                                                            setIsReceiptOpen(true);
+                                                        }}
+                                                    >
+                                                        {isPdf ? (
+                                                            <div className="flex flex-col items-center justify-center text-red-500">
+                                                                <FileText size={24} />
+                                                                <span className="text-[8px] font-bold mt-1 uppercase text-gray-500">PDF</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="relative w-full h-full">
+                                                                <Image
+                                                                    src={fullReceiptUrl}
+                                                                    alt="Preview"
+                                                                    fill
+                                                                    className="object-cover"
+                                                                    unoptimized
+                                                                />
+                                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity flex-col">
+                                                                    <FileText size={16} className="text-white mb-1" />
+                                                                    <span className="text-[8px] font-bold text-white uppercase tracking-wider">View</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400 italic">None</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${status.includes("reviewed") ? "bg-amber-100 text-amber-700" : (status.includes("payment") ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700")
                                                     }`}>
                                                     {status}
                                                 </span>
@@ -312,15 +364,22 @@ export default function PMBookings() {
                                                         Generate Billing
                                                     </button>
                                                 ) : (
-                                                    <button
-                                                        className="px-4 py-2 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-emerald-600 transition-colors shadow-sm whitespace-nowrap"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleStatusUpdate(b.bookingID, 'approved', 'Confirm receipt of payment? This will finalize the booking.');
-                                                        }}
-                                                    >
-                                                        Confirm Payment
-                                                    </button>
+                                                    <div className="flex flex-col gap-2">
+                                                        <button
+                                                            className={`px-4 py-2 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-colors shadow-sm whitespace-nowrap w-full ${b.receipt_url
+                                                                ? "bg-emerald-500 hover:bg-emerald-600"
+                                                                : "bg-gray-400 opacity-60 cursor-not-allowed"
+                                                                }`}
+                                                            disabled={!b.receipt_url}
+                                                            title={!b.receipt_url ? "Cannot confirm payment without an uploaded receipt from the client." : "Confirm receipt of payment."}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleStatusUpdate(b.bookingID, 'approved', 'Confirm receipt of payment? This will finalize the booking.');
+                                                            }}
+                                                        >
+                                                            Confirm Payment
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </td>
                                         </tr>
@@ -347,6 +406,13 @@ export default function PMBookings() {
                     alert("Billing sent successfully!");
                     loadData();
                 }}
+            />
+
+            <ViewReceiptModal
+                isOpen={isReceiptOpen}
+                onClose={() => setIsReceiptOpen(false)}
+                receiptUrl={selectedReceiptUrl}
+                bookingId={selectedBooking?.bookingID}
             />
         </div>
     );

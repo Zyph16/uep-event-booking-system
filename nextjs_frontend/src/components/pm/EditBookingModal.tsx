@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Save } from "lucide-react";
+import { getApiBaseUrl } from "@/utils/config";
 
 interface EditBookingModalProps {
     isOpen: boolean;
@@ -10,7 +11,7 @@ interface EditBookingModalProps {
     onSuccess: () => void;
 }
 
-const API_BASE = "http://192.168.1.31:5000/api";
+// const API_BASE = "http://localhost:5000/api";
 
 export default function EditBookingModal({ isOpen, onClose, booking, onSuccess }: EditBookingModalProps) {
     const [formData, setFormData] = useState({
@@ -36,7 +37,7 @@ export default function EditBookingModal({ isOpen, onClose, booking, onSuccess }
             // Fetch facilities for dropdown
             const fetchFacilities = async () => {
                 const token = localStorage.getItem("token");
-                const res = await fetch(`${API_BASE}/facilities`, {
+                const res = await fetch(`${getApiBaseUrl()}/facilities`, {
                     headers: { "Authorization": `Bearer ${token}` }
                 });
                 const data = await res.json();
@@ -51,7 +52,7 @@ export default function EditBookingModal({ isOpen, onClose, booking, onSuccess }
         setLoading(true);
         try {
             const token = localStorage.getItem("token");
-            const res = await fetch(`${API_BASE}/bookings/${booking.bookingID}`, {
+            const res = await fetch(`${getApiBaseUrl()}/bookings/${booking.bookingID}`, {
                 method: "PUT",
                 headers: {
                     "Authorization": `Bearer ${token}`,

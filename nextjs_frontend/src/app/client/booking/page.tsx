@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import FacilityList from "@/components/booking/FacilityList";
 import FacilityDetails from "@/components/booking/FacilityDetails";
 import BookingModal from "@/components/booking/BookingModal";
+import { getApiBaseUrl } from "@/utils/config";
 
 export default function BookingPage() {
     const [selectedFacility, setSelectedFacility] = useState<any>(null);
@@ -18,7 +19,9 @@ export default function BookingPage() {
     useEffect(() => {
         const fetchFacilities = async () => {
             try {
-                const res = await fetch("http://192.168.1.31:5000/api/facilities/public");
+                const res = await fetch(`${getApiBaseUrl()}/facilities/public`, {
+                    cache: "no-store"
+                });
                 if (!res.ok) throw new Error("Failed to load facilities");
                 const data = await res.json();
                 setFacilities(data.facilities || []);
@@ -38,8 +41,25 @@ export default function BookingPage() {
         (facility.location && facility.location.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
+    const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        setIsLoggedIn(!!token);
+    }, []);
+
     const handleBookClick = () => {
+        if (!isLoggedIn) {
+            setIsLoginModalOpen(true);
+            return;
+        }
         setIsModalOpen(true);
+    };
+
+    const handleLoginRedirect = () => {
+        setIsLoginModalOpen(false);
+        window.location.href = "/login";
     };
 
     return (
@@ -47,13 +67,14 @@ export default function BookingPage() {
 
             {/* Header */}
             <div className="mb-8 bg-gradient-to-br from-[#1f3c88] to-[#0d2b6b] p-8 rounded-2xl text-white shadow-lg">
-                <h1 className="text-3xl font-bold mb-4">Find Your Perfect Facility</h1>
+                <h1 className="flex text-1xl sm:text-xl md:text-4xl lg:text-5xl font-bold mb-4">Find Your Perfect Facility</h1>
                 <div className="relative max-w-2xl">
                     <input
                         type="text"
                         placeholder="Search facility name..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
+                        suppressHydrationWarning
                         className="w-full pl-6 pr-12 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-white/60 focus:bg-white focus:text-gray-900 focus:placeholder-gray-400 outline-none transition-all shadow-inner"
                     />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-[#e91e63] p-2 rounded-lg cursor-pointer hover:bg-[#c2185b] transition-colors shadow-md">
@@ -108,6 +129,38 @@ export default function BookingPage() {
                 onClose={() => setIsModalOpen(false)}
                 facility={selectedFacility}
             />
+
+            {/* Login Required Modal */}
+            {isLoginModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 animate-in zoom-in-95 duration-200">
+                        <div className="text-center">
+                            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" x2="3" y1="12" y2="12" /></svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">Login Required</h3>
+                            <p className="text-gray-500 mb-6">
+                                You must be logged in to create a booking.<br />
+                                Please sign in or register to continue.
+                            </p>
+                            <div className="flex justify-center gap-3">
+                                <button
+                                    onClick={() => setIsLoginModalOpen(false)}
+                                    className="px-4 py-2 rounded-xl text-gray-600 font-medium hover:bg-gray-100 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleLoginRedirect}
+                                    className="px-6 py-2 rounded-xl bg-primary text-white font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                                >
+                                    OK, Sign In
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

@@ -1,14 +1,16 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Search, Edit2, Trash2, Plus } from "lucide-react";
+import { Search, Plus, Edit2, Trash2, Key, X, Check, Filter } from "lucide-react";
 import UserModal from "@/components/admin/users/UserModal";
 import RoleModal from "@/components/admin/users/RoleModal";
 import Modal from "@/components/shared/Modal";
+import { getApiBaseUrl } from "@/utils/config";
 
-const API_BASE = "http://192.168.1.31:5000/api";
+// const API_BASE = "http://localhost:5000/api";
+const API_BASE = getApiBaseUrl();
 
-export default function ManageUsersPage() {
+export default function UsersPage() {
     const [users, setUsers] = useState<any[]>([]);
     const [roles, setRoles] = useState<any[]>([]);
     const [facilities, setFacilities] = useState<any[]>([]);
@@ -133,35 +135,61 @@ export default function ManageUsersPage() {
                 });
             }
 
-            if (!res.ok) throw new Error("Save failed");
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || "Save failed");
+            }
 
             setIsUserModalOpen(false);
             fetchData();
             showFeedback("Success", `User ${userToEdit ? 'updated' : 'created'} successfully!`, "success");
-        } catch (err) {
-            showFeedback("Error", `Failed to ${userToEdit ? 'update' : 'create'} user.`, "error");
+        } catch (err: any) {
+            showFeedback("Error", err.message || `Failed to ${userToEdit ? 'update' : 'create'} user.`, "error");
         }
     };
 
-    const saveRole = async (roleName: string) => {
+    const saveRole = async (roleData: { id?: number, name: string, role_specification: string }) => {
         const token = localStorage.getItem("token");
         try {
-            const res = await fetch(`${API_BASE}/roles`, {
-                method: "POST",
+            const isEditing = !!roleData.id;
+            const url = isEditing ? `${API_BASE}/roles/${roleData.id}` : `${API_BASE}/roles`;
+            const method = isEditing ? "PUT" : "POST";
+
+            const res = await fetch(url, {
+                method: method,
                 headers: {
                     "Authorization": `Bearer ${token}`,
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ name: roleName.toUpperCase() })
+                body: JSON.stringify({ name: roleData.name.toUpperCase(), role_specification: roleData.role_specification })
             });
 
             if (!res.ok) throw new Error("Save role failed");
 
-            setIsRoleModalOpen(false);
+            // We do NOT close the modal on save so the user doesn't lose the flow of editing multiple
             fetchData();
-            showFeedback("Success", `Role "${roleName.toUpperCase()}" created successfully!`, "success");
+            showFeedback("Success", `Role "${roleData.name.toUpperCase()}" ${isEditing ? 'updated' : 'created'} successfully!`, "success");
         } catch (err) {
-            showFeedback("Error", "Failed to create role.", "error");
+            showFeedback("Error", `Failed to ${roleData.id ? 'update' : 'create'} role.`, "error");
+        }
+    };
+
+    const deleteRole = async (id: number) => {
+        if (!confirm("Are you sure you want to delete this role?")) return;
+
+        const token = localStorage.getItem("token");
+        try {
+            const res = await fetch(`${API_BASE}/roles/${id}`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (!res.ok) throw new Error("Delete role failed");
+
+            fetchData();
+            showFeedback("Success", "Role deleted successfully.", "success");
+        } catch (err) {
+            showFeedback("Error", "Failed to delete role.", "error");
         }
     };
 
@@ -274,6 +302,8 @@ export default function ManageUsersPage() {
                 isOpen={isRoleModalOpen}
                 onClose={() => setIsRoleModalOpen(false)}
                 onSave={saveRole}
+                roles={roles}
+                onDelete={deleteRole}
             />
 
             <Modal

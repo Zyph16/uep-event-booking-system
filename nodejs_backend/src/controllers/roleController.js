@@ -13,7 +13,7 @@ class RoleController {
         }
 
         try {
-            const role = await RoleService.createRole(data.name);
+            const role = await RoleService.createRole(data.name, data.role_specification);
             // Assuming role model has toPublicArray or we just sanitize manually
             res.status(201).json({ role: role.toPublicArray ? role.toPublicArray() : role });
         } catch (e) {

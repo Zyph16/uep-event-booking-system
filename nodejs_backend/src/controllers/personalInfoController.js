@@ -45,6 +45,7 @@ class PersonalInfoController {
             const item = await PersonalInfoService.create(data);
             res.status(201).json({ personalinfo: item.toArray ? item.toArray() : item });
         } catch (e) {
+            console.error("PersonalInfo Create Error:", e);
             res.status(500).json({ error: e.message });
         }
     }
@@ -57,6 +58,7 @@ class PersonalInfoController {
             if (!item) return res.status(400).json({ error: 'Update failed' });
             res.json({ personalinfo: item.toArray ? item.toArray() : item });
         } catch (e) {
+            console.error("PersonalInfo Update Error:", e);
             res.status(500).json({ error: e.message });
         }
     }

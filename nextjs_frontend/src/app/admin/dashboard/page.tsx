@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Users, Building2, CheckCircle, Smartphone } from "lucide-react";
+import { getApiBaseUrl } from "@/utils/config";
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({
@@ -14,7 +15,7 @@ export default function AdminDashboard() {
     const [recentFacilities, setRecentFacilities] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const API_BASE = "http://192.168.1.31:5000/api"; // Adjust if needed
+    // const API_BASE = "http://localhost:5000/api";
 
     useEffect(() => {
         const fetchData = async () => {
@@ -23,12 +24,12 @@ export default function AdminDashboard() {
                 const headers = { "Authorization": `Bearer ${token}` };
 
                 // Fetch Users
-                const usersRes = await fetch(`${API_BASE}/users`, { headers });
+                const usersRes = await fetch(`${getApiBaseUrl()}/users`, { headers });
                 const usersData = await usersRes.json();
                 const usersList = usersData.users || [];
 
                 // Fetch Facilities
-                const facilRes = await fetch(`${API_BASE}/facilities`, { headers });
+                const facilRes = await fetch(`${getApiBaseUrl()}/facilities`, { headers });
                 const facilData = await facilRes.json();
                 const facilList = facilData.facilities || [];
 

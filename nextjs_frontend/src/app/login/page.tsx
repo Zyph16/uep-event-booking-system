@@ -15,34 +15,7 @@ export default function LoginPage() {
             {/* Background Illustrations mimicking legacy absolute positioning */}
             {/* We use Next/Image but need to be careful with z-index */}
 
-            {/* Mobile Login Bro - Bottom Left */}
-            <div className="absolute bottom-[-50px] left-[-0px] w-[350px] md:w-[500px] z-0 pointer-events-none opacity-80 md:opacity-100 hidden md:block">
-                {/* Using a placeholder SVG or the real path if available. 
-             Since we can't easily copy assets, we'll use a placeholder or assume the user copies them.
-             For now, we'll assume standard layout without the specific SVG unless provided.
-             Legacy path: ../../images/illustration/Mobile login-bro.svg
-         */}
-                <Image
-                    src="/images/illustration/Mobile login-bro.svg"
-                    alt="Mobile Login"
-                    width={500}
-                    height={400}
-                    className="w-full h-auto"
-                // Fallback strategy: if this path is invalid, it shows alt.
-                // In a real migration, we'd ensure these assets are in /public/images
-                />
-            </div>
 
-            {/* Windy Day Bro - Top Right */}
-            <div className="absolute top-10 right-[-30px] w-[300px] md:w-[450px] z-0 pointer-events-none opacity-50 md:opacity-100 hidden md:block">
-                <Image
-                    src="/images/illustration/Windy day-bro.svg"
-                    alt="Windy Day"
-                    width={450}
-                    height={350}
-                    className="w-full h-auto"
-                />
-            </div>
 
             {/* Main Login Box */}
             <div className={`relative z-10 w-full bg-white rounded-[30px] shadow-2xl flex flex-col items-center pt-4 pb-4 overflow-hidden transition-all duration-500 ease-in-out ${activeTab === 'login' ? 'max-w-[480px] min-h-[500px]' : 'max-w-[730px] min-h-[400px]'}`}>

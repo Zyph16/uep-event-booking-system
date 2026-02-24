@@ -21,14 +21,14 @@ class RoleRepository {
     }
 
     // ➕ Create role
-    static async create(name) {
-        const [result] = await pool.query('INSERT INTO roles (name) VALUES (?)', [name]);
+    static async create(name, roleSpecification = 'Regular Account') {
+        const [result] = await pool.query('INSERT INTO roles (name, role_specification) VALUES (?, ?)', [name, roleSpecification]);
         return this.findById(result.insertId);
     }
 
     // ✏️ Update role
     static async update(id, updates) {
-        const allowed = ['name'];
+        const allowed = ['name', 'role_specification'];
         const setParts = [];
         const values = [];
 

@@ -6,14 +6,17 @@ import {
     Mail,
     Phone,
     Lock,
+    MapPin,
     Save,
-    Camera,
-    MapPin
+    Shield,
+    Camera
 } from "lucide-react";
+import { getApiBaseUrl } from "@/utils/config";
 
 import * as PhilAddress from 'phil-reg-prov-mun-brgy';
 
-const API_BASE = "http://192.168.1.31:5000/api";
+// const API_BASE = "http://localhost:5000/api";
+const API_BASE = getApiBaseUrl();
 
 export default function PresidentProfile() {
     const [user, setUser] = useState<any>(null);
@@ -22,10 +25,7 @@ export default function PresidentProfile() {
         mname: "",
         lname: "",
         phone: "",
-        fname: "",
-        mname: "",
-        lname: "",
-        phone: "",
+
         email: "",
         street: "",
         city: "",
@@ -62,7 +62,7 @@ export default function PresidentProfile() {
             setUser(parsedUser);
 
             // Fetch Personal Info
-            const res = await fetch(`${API_BASE}/personalinfo/me`, {
+            const res = await fetch(`${getApiBaseUrl()}/personalinfo/me`, {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             if (res.ok) {
@@ -73,7 +73,7 @@ export default function PresidentProfile() {
                         mname: data.personalinfo.mname || "",
                         lname: data.personalinfo.lname || "",
                         phone: data.personalinfo.phone || "",
-                        phone: data.personalinfo.phone || "",
+
                         email: data.personalinfo.email || parsedUser.email || "",
                         street: data.personalinfo.street || "",
                         city: data.personalinfo.city || "",
@@ -367,8 +367,8 @@ export default function PresidentProfile() {
                                                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-600 appearance-none"
                                             >
                                                 <option value="">Select Province</option>
-                                                {provinces.map((p: any) => (
-                                                    <option key={p.prov_code} value={p.name}>{p.name}</option>
+                                                {provinces.map((p: any, idx: number) => (
+                                                    <option key={`prov-${p.prov_code}-${idx}`} value={p.name}>{p.name}</option>
                                                 ))}
                                             </select>
                                             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
@@ -388,8 +388,8 @@ export default function PresidentProfile() {
                                                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-600 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <option value="">Select City</option>
-                                                {cities.map((c: any) => (
-                                                    <option key={c.mun_code} value={c.name}>{c.name}</option>
+                                                {cities.map((c: any, idx: number) => (
+                                                    <option key={`city-${c.mun_code}-${idx}`} value={c.name}>{c.name}</option>
                                                 ))}
                                             </select>
                                             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
@@ -412,8 +412,8 @@ export default function PresidentProfile() {
                                                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f3c88]/20 focus:border-[#1f3c88] text-sm font-medium text-gray-600 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <option value="">Select Barangay</option>
-                                                {barangays.map((b: any) => (
-                                                    <option key={b.name} value={b.name}>{b.name}</option>
+                                                {barangays.map((b: any, idx: number) => (
+                                                    <option key={`brgy-${b.name}-${idx}`} value={b.name}>{b.name}</option>
                                                 ))}
                                             </select>
                                             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">

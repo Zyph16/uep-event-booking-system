@@ -8,8 +8,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-roboto);
 
   /* Legacy Colors */
   --color-primary: #1f3c88;
@@ -41,4 +40,23 @@ body {
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 85px;
+}
+
+/* Custom Animation for Album Image Spread */
+@keyframes spread-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px) scale(0.95);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.animate-spread-in {
+  opacity: 0;
+  /* Ensures it's hidden before animation starts */
+  animation: spread-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

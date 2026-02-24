@@ -11,9 +11,14 @@ class Config {
     static get DB_USER() { return process.env.DB_USER || 'root'; }
     static get DB_PASS() { return process.env.DB_PASS || 'password'; }
     static get DB_NAME() { return process.env.DB_NAME || 'uep_event_booking_db'; }
-    static get JWT_SECRET() { return process.env.JWT_SECRET; }
+    static get JWT_SECRET() {
+        if (!process.env.JWT_SECRET) {
+            throw new Error('FATAL ERROR: JWT_SECRET environment variable is not defined.');
+        }
+        return process.env.JWT_SECRET;
+    }
     static get JWT_ISSUER() { return process.env.JWT_ISSUER || 'user-mvc'; }
-    static get JWT_EXPIRES_IN() { return process.env.JWT_EXPIRES_IN || 7200; }
+    static get JWT_EXPIRES_IN() { return process.env.JWT_EXPIRES_IN || 86400; }
 }
 
 module.exports = Config;

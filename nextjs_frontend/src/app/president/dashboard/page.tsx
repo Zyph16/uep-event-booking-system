@@ -10,12 +10,16 @@ import {
 } from "lucide-react";
 import Calendar from "@/components/shared/Calendar";
 import { EventInput } from "@fullcalendar/core";
+import { Users, Building2, Smartphone } from "lucide-react";
+import { getApiBaseUrl } from "@/utils/config";
 
-const API_BASE = "http://192.168.1.31:5000/api";
 
 export default function PresidentDashboard() {
     const [user, setUser] = useState<any>(null);
+    // const API_BASE = "http://localhost:5000/api";
+    const API_BASE = getApiBaseUrl();
     const [bookings, setBookings] = useState<any[]>([]);
+    const [recentBookings, setRecentBookings] = useState<any[]>([]);
     const [pendingRequests, setPendingRequests] = useState<any[]>([]);
     const [stats, setStats] = useState({
         newBookings: 0,

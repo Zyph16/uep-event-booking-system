@@ -1,8 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useState } from "react";
 // import Image from "next/image";
-import { Users, MapPin, CheckCircle, AlertCircle, Info, Calendar, Package, ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight, MapPin, Users, Info, Calendar, CheckCircle, AlertCircle, Package, ChevronLeft, ChevronRight } from "lucide-react";
+import { getBackendUrl } from "@/utils/config";
+import AlbumCard from "@/components/cards/albumCards/AlbumCard";
 
 interface FacilityDetailsProps {
     facility: any;
@@ -12,6 +14,35 @@ interface FacilityDetailsProps {
 }
 
 export default function FacilityDetails({ facility, onBook, variant = 'default', onClose }: FacilityDetailsProps) {
+    const carouselRef = useRef<HTMLDivElement>(null);
+    const imageCarouselRef = useRef<HTMLDivElement>(null);
+    const [selectedAlbumIndex, setSelectedAlbumIndex] = useState<number | null>(null);
+    const [selectedPreviewImage, setSelectedPreviewImage] = useState<string | null>(null);
+
+    const scrollLeft = () => {
+        if (carouselRef.current) {
+            carouselRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+        }
+    };
+
+    const scrollRight = () => {
+        if (carouselRef.current) {
+            carouselRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+        }
+    };
+
+    const scrollImagesLeft = () => {
+        if (imageCarouselRef.current) {
+            imageCarouselRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+        }
+    };
+
+    const scrollImagesRight = () => {
+        if (imageCarouselRef.current) {
+            imageCarouselRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+        }
+    };
+
     if (!facility) {
         if (variant === 'inline') return null; // Don't show empty state inline
         return (
@@ -26,12 +57,13 @@ export default function FacilityDetails({ facility, onBook, variant = 'default',
     }
 
     // Handle image URL
-    const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-    const imageUrl = facility.imagepath
+    const defaultImageUrl = facility.imagepath
         ? (facility.imagepath.startsWith('http')
             ? facility.imagepath
-            : `http://${hostname}:5000${facility.imagepath.startsWith('/') ? '' : '/'}${facility.imagepath}`)
+            : `${getBackendUrl()}${facility.imagepath.startsWith('/') ? '' : '/'}${facility.imagepath}`)
         : null;
+
+    const displayImageUrl = selectedPreviewImage || defaultImageUrl;
 
     const isAvailable = facility.status.toLowerCase() === "available";
     const isInline = variant === 'inline';
@@ -57,11 +89,12 @@ export default function FacilityDetails({ facility, onBook, variant = 'default',
                     </button>
                 )}
 
-                {imageUrl ? (
+                {displayImageUrl ? (
                     <img
-                        src={imageUrl}
+                        key={displayImageUrl} // Force re-render for animation
+                        src={displayImageUrl}
                         alt={facility.facility_name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover animate-in fade-in duration-500"
                     />
                 ) : (
                     <div className="flex items-center justify-center h-full text-gray-400">No Image Available</div>
@@ -70,7 +103,7 @@ export default function FacilityDetails({ facility, onBook, variant = 'default',
                 {/* Desktop Overlay Text */}
                 {!isInline && (
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-6">
-                        <h2 className="font-bold text-white mb-2 leading-tight text-3xl">{facility.facility_name}</h2>
+                        <h2 className="font-bold text-white mb-2 leading-tight text-2xl sm:text-4xl md:text-5xl lg:text-4xl">{facility.facility_name}</h2>
                         <div className="flex items-center gap-3 text-white/90 text-sm font-medium flex-wrap">
                             <span className="flex items-center gap-1.5 backdrop-blur-sm bg-white/20 px-3 py-1 rounded-full border border-white/10">
                                 <MapPin size={14} /> {facility.location || 'Campus'}
@@ -155,6 +188,115 @@ export default function FacilityDetails({ facility, onBook, variant = 'default',
                         </button>
                     )}
                 </div>
+
+                {/* Album Card Preview (Mapped per folder) */}
+                {facility.albums && facility.albums.length > 0 && (
+                    <div className="mb-6 animate-in fade-in duration-500 delay-75">
+
+                        {selectedAlbumIndex === null ? (
+                            <>
+                                <h3 className="font-bold text-gray-800 mb-3 text-sm flex items-center gap-2 uppercase tracking-wider opacity-80">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
+                                    Facility Gallery
+                                </h3>
+                                <div className="relative group">
+                                    {/* Left Arrow */}
+                                    <button
+                                        onClick={scrollLeft}
+                                        className="absolute left-0 top-[80px] -translate-y-1/2 z-20 p-1.5 rounded-full bg-white shadow-md border border-gray-100 text-gray-500 hover:text-primary hover:scale-110 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-0"
+                                    >
+                                        <ChevronLeft size={20} />
+                                    </button>
+
+                                    {/* Carousel Container */}
+                                    <div
+                                        ref={carouselRef}
+                                        className="flex flex-nowrap overflow-x-auto px-12 gap-4 pb-4 snap-x hide-scrollbar scroll-smooth"
+                                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                                    >
+                                        {facility.albums.map((album: any, idx: number) => {
+                                            if (!album.images || album.images.length === 0) return null;
+                                            return (
+                                                <div key={idx} className="w-auto flex-shrink-0 snap-start">
+                                                    <AlbumCard
+                                                        images={album.images}
+                                                        title={album.name}
+                                                        onClick={() => setSelectedAlbumIndex(idx)}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Right Arrow */}
+                                    <button
+                                        onClick={scrollRight}
+                                        className="absolute right-0 top-[80px] -translate-y-1/2 z-20 p-1.5 rounded-full bg-white shadow-md border border-gray-100 text-gray-500 hover:text-primary hover:scale-110 transition-all opacity-0 group-hover:opacity-100"
+                                    >
+                                        <ChevronRight size={20} />
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="animate-in slide-in-from-right-4 duration-300">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2 uppercase tracking-wider opacity-80">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
+                                        <span className="truncate max-w-[150px] sm:max-w-[200px]">{facility.albums[selectedAlbumIndex].name}</span>
+                                    </h3>
+                                    <button
+                                        onClick={() => {
+                                            setSelectedAlbumIndex(null);
+                                            setSelectedPreviewImage(null);
+                                        }}
+                                        className="text-xs font-semibold text-gray-500 hover:text-primary flex items-center gap-1 bg-gray-100 hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors"
+                                    >
+                                        <ArrowLeft size={14} /> Back to Albums
+                                    </button>
+                                </div>
+                                <div className="relative group mt-2">
+                                    {/* Left Arrow for Images */}
+                                    <button
+                                        onClick={scrollImagesLeft}
+                                        className="absolute left-0 top-[60px] -translate-y-1/2 z-20 p-1.5 rounded-full bg-white shadow-md border border-gray-100 text-gray-500 hover:text-primary hover:scale-110 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-0"
+                                    >
+                                        <ChevronLeft size={20} />
+                                    </button>
+
+                                    {/* Image Carousel Container */}
+                                    <div
+                                        ref={imageCarouselRef}
+                                        className="flex flex-nowrap overflow-x-auto px-10 gap-3 pb-2 snap-x hide-scrollbar scroll-smooth"
+                                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                                    >
+                                        {facility.albums[selectedAlbumIndex].images.map((img: any, idx: number) => (
+                                            <div
+                                                key={idx}
+                                                className="w-[96px] h-[120px] flex-shrink-0 snap-start rounded-[8%] overflow-hidden border-[4px] border-white shadow-sm hover:z-10 relative origin-center animate-spread-in"
+                                                style={{ animationDelay: `${idx * 75}ms`, animationFillMode: 'both' }}
+                                            >
+                                                <img
+                                                    src={`${getBackendUrl()}${img.image_path}`}
+                                                    alt="Facility Image"
+                                                    className="w-full h-full object-cover hover:scale-110 transition-transform duration-300 cursor-pointer"
+                                                    onClick={() => setSelectedPreviewImage(`${getBackendUrl()}${img.image_path}`)}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Right Arrow for Images */}
+                                    <button
+                                        onClick={scrollImagesRight}
+                                        className="absolute right-0 top-[60px] -translate-y-1/2 z-20 p-1.5 rounded-full bg-white shadow-md border border-gray-100 text-gray-500 hover:text-primary hover:scale-110 transition-all opacity-0 group-hover:opacity-100"
+                                    >
+                                        <ChevronRight size={20} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Inclusions (Equipment & Rooms) */}
                 {(facility.equipment_included?.length > 0 || facility.rooms_included?.length > 0) && (

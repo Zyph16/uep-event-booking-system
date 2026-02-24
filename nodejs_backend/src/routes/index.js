@@ -12,6 +12,9 @@ const roomRoutes = require('./roomRoutes');
 const billingRoutes = require('./billingRoutes');
 
 
+const authRoutes = require('./authRoutes');
+
+router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/personalinfo', personalInfoRoutes);
 

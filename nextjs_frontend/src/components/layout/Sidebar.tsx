@@ -13,7 +13,7 @@ import {
 import { useEffect, useState } from "react";
 
 interface SidebarProps {
-    role: "ADMIN" | "PROJECT MANAGER" | "UNIVERSITY PRESIDENT";
+    role: "ADMIN" | "PROJECT MANAGER" | "UNIVERSITY PRESIDENT" | "PRESIDENT";
     isOpen?: boolean;
     onClose?: () => void;
 }
@@ -70,11 +70,12 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
     if (role === "PROJECT MANAGER") {
         menuItems = [
             { name: "Dashboard", href: "/pm/dashboard", icon: LayoutDashboard },
+            { name: "Manage My Facility", href: "/pm/facilities", icon: BookOpen },
             { name: "Bookings", href: "/pm/bookings", icon: BookOpen },
             { name: "Reports", href: "/pm/reports", icon: FileBarChart },
             { name: "Profile", href: "/pm/profile", icon: UserCircle },
         ];
-    } else if (role === "UNIVERSITY PRESIDENT") {
+    } else if (role === "UNIVERSITY PRESIDENT" || role === "PRESIDENT") {
         menuItems = [
             { name: "Dashboard", href: "/president/dashboard", icon: LayoutDashboard },
             { name: "Statistics", href: "/president/statistics", icon: FileBarChart },

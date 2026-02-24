@@ -1,8 +1,9 @@
 const { pool } = require('../core/database');
 
 class BillingRepository {
-  static async create(data) {
-    const [result] = await pool.query(`
+  static async create(data, connection = null) {
+    const db = connection || pool;
+    const [result] = await db.query(`
       INSERT INTO billings (booking_id, issued_by, facility_fee, equipment_fee, total_amount, status)
       VALUES (?, ?, ?, ?, ?, ?)
     `, [
@@ -31,10 +32,12 @@ class BillingRepository {
     return rows.length ? rows[0] : null;
   }
 
-  static async getIncomeStats(period, facilityId) {
+  static async getIncomeStats(period, facilityId, startDate, endDate) {
     let groupBy = "DATE_FORMAT(bk.date_start, '%Y-%m')"; // Default Monthly: 2023-01
     if (period === 'annually') {
       groupBy = "DATE_FORMAT(bk.date_start, '%Y')";
+    } else if (period === 'daily') {
+      groupBy = "DATE_FORMAT(bk.date_start, '%Y-%m-%d')";
     }
 
     let query = `
@@ -44,12 +47,23 @@ class BillingRepository {
             FROM billings b
             JOIN bookings bk ON b.booking_id = bk.bookingID
             WHERE b.status NOT IN ('Cancelled', 'Rejected') 
+            AND bk.status = 'Approved' 
         `;
 
     const params = [];
     if (facilityId && facilityId !== 'all') {
       query += " AND bk.facilityID = ? ";
       params.push(facilityId);
+    }
+
+    if (startDate) {
+      query += " AND bk.date_start >= ? ";
+      params.push(startDate);
+    }
+
+    if (endDate) {
+      query += " AND bk.date_start <= ? ";
+      params.push(endDate);
     }
 
     query += ` GROUP BY label ORDER BY label ASC`;

@@ -23,8 +23,8 @@ class PersonalInfoRepository {
     // Create
     static async create(data) {
         const [result] = await pool.query(
-            `INSERT INTO personal_info (userID, fname, mname, lname, email, phone, street, city, province) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO personal_info (userID, fname, middle_name, lname, email, phone, street, city, barangay, province) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.userID,
                 data.fname,
@@ -34,6 +34,7 @@ class PersonalInfoRepository {
                 data.phone || null,
                 data.street || null,
                 data.city || null,
+                data.barangay || null,
                 data.province || null
             ]
         );
@@ -42,14 +43,17 @@ class PersonalInfoRepository {
 
     // Update
     static async update(id, data) {
-        const fields = ['fname', 'mname', 'lname', 'email', 'phone', 'street', 'city', 'province'];
+        const fields = ['fname', 'middle_name', 'lname', 'email', 'phone', 'street', 'city', 'barangay', 'province'];
         const setParts = [];
         const values = [];
 
         for (const f of fields) {
-            if (data[f] !== undefined) {
+            // Map mname from input data to middle_name in DB
+            const dataKey = f === 'middle_name' ? 'mname' : f;
+
+            if (data[dataKey] !== undefined) {
                 setParts.push(`${f} = ?`);
-                values.push(data[f]);
+                values.push(data[dataKey]);
             }
         }
 

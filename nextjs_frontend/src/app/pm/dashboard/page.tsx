@@ -6,12 +6,16 @@ import {
     CheckCircle,
     Clock,
     Calendar as CalendarIcon,
-    AlertCircle
+    AlertCircle,
+    Users,
+    Building2,
+    Smartphone
 } from "lucide-react";
 import Calendar from "@/components/shared/Calendar";
 import { EventInput } from "@fullcalendar/core";
+import { getApiBaseUrl } from "@/utils/config";
 
-const API_BASE = "http://192.168.1.31:5000/api";
+const API_BASE = getApiBaseUrl();
 
 export default function PMDashboard() {
     const [user, setUser] = useState<any>(null);

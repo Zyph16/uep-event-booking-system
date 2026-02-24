@@ -10,19 +10,23 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-    origin: [
-        'http://localhost',
-        'http://localhost:80',
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://127.0.0.1',
-        'http://127.0.0.1:3001',
-        'http://192.168.56.1:3000',
-        'http://192.168.56.1:3001',
-        'http://192.168.1.31:3000',
-        'http://192.168.1.31:3001',
-        // Add dynamic origin handling if needed in future
-    ],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        // Allow localhost and standard local network IPs
+        // Also allow specific ports if needed, but regex handles standard dev ports
+        if (origin.startsWith('http://localhost') ||
+            origin.startsWith('http://127.0.0.1') ||
+            origin.match(/^http:\/\/192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$/) ||
+            origin.match(/^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$/) ||
+            origin.match(/^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}(:\d+)?$/)) {
+            return callback(null, true);
+        }
+
+        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+        return callback(new Error(msg), false);
+    },
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Auth-Token']
 }));
@@ -37,6 +41,7 @@ app.use(methodOverride('_method'));
 // Serving 'public' directory from the root of nodejs_backend
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Routes
 // Routes
 app.use('/api', routes);
 
@@ -56,12 +61,21 @@ app.use((req, res) => {
 });
 
 // Start Server
-app.listen(PORT, async () => {
+// Start Server
+// Start Server
+app.listen(PORT, '0.0.0.0', async () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`Network access enabled: http://<YOUR-IP-ADDRESS>:${PORT}`);
     try {
         const connection = await pool.getConnection();
         console.log('Database connected successfully');
         connection.release();
+
+        // Start Cron Jobs
+        const autoRejectJob = require('./jobs/autoRejectJob');
+        autoRejectJob.start();
+        console.log('Auto-Reject Job scheduled.');
+
     } catch (e) {
         console.error('Database connection failed:', e);
     }

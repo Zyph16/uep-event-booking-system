@@ -1,5 +1,5 @@
 class Facility {
-    constructor(facilityID, facility_name, location, capacity, price, status, imagepath, equipment = null, rooms = null, equipment_names = null, room_names = null) {
+    constructor(facilityID, facility_name, location, capacity, price, status, imagepath, equipment = null, rooms = null, equipment_names = null, room_names = null, equipment_details = [], room_details = [], albums = []) {
         this.facilityID = facilityID;
         this.facility_name = facility_name;
         this.location = location;
@@ -11,6 +11,9 @@ class Facility {
         this.rooms = rooms;
         this.equipment_names = equipment_names;
         this.room_names = room_names;
+        this.equipment_details = equipment_details;
+        this.room_details = room_details;
+        this.albums = albums;
     }
 
     static fromRow(row) {
@@ -25,7 +28,10 @@ class Facility {
             row.equipment || null,
             row.rooms || null,
             row.equipment_names || null,
-            row.room_names || null
+            row.room_names || null,
+            row.equipment_details || [],
+            row.room_details || [],
+            row.albums || []
         );
     }
 
@@ -51,7 +57,10 @@ class Facility {
             equipment: this.equipment,
             rooms: this.rooms,
             equipment_names: this.equipment_names,
-            room_names: this.room_names
+            room_names: this.room_names,
+            equipment_details: this.equipment_details,
+            room_details: this.room_details,
+            albums: this.albums
         };
     }
 }

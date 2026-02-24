@@ -22,6 +22,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 const adminOnly = [authMiddleware, roleMiddleware(Roles.ADMIN)];
+const manageAuth = [authMiddleware, roleMiddleware(Roles.ADMIN, Roles.PROJECT_MANAGER)];
 
 // Public
 router.get('/public', FacilityController.getPublicFacilities);
@@ -32,6 +33,12 @@ router.get('/:id', authMiddleware, FacilityController.findOne);
 router.post('/', adminOnly, upload.single('image'), FacilityController.create);
 router.put('/:id', adminOnly, upload.single('image'), FacilityController.update);
 router.delete('/:id', adminOnly, FacilityController.delete);
+
+// Facility Albums (Folders) and Images
+router.post('/:id/albums', manageAuth, FacilityController.createAlbum);
+router.delete('/albums/:albumId', manageAuth, FacilityController.deleteAlbum);
+router.post('/albums/:albumId/images', manageAuth, upload.array('images', 20), FacilityController.uploadImageToAlbum);
+router.delete('/albums/images/:imageId', manageAuth, FacilityController.deleteImage);
 
 // Facility Equipment (Junction)
 router.get('/:facilityId/equipment', adminOnly, FacilityEquipmentController.getByFacility);

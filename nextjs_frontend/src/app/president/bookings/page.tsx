@@ -13,8 +13,10 @@ import {
 } from "lucide-react";
 import PresidentBookingDetailModal from "@/components/president/PresidentBookingDetailModal";
 import BlockScheduleModal from "@/components/president/BlockScheduleModal";
+import { getApiBaseUrl } from "@/utils/config";
 
-const API_BASE = "http://192.168.1.31:5000/api";
+// const API_BASE = "http://localhost:5000/api";
+const API_BASE = getApiBaseUrl();
 
 export default function PresidentBookings() {
     const [bookings, setBookings] = useState<any[]>([]);
@@ -55,11 +57,23 @@ export default function PresidentBookings() {
 
             // Fetch Facilities
             if (facilities.length === 0) {
-                const facRes = await fetch(`${API_BASE}/facilities`, {
-                    headers: { "Authorization": `Bearer ${token}` }
-                });
-                const facData = await facRes.json();
-                setFacilities(facData.facilities || []);
+                try {
+                    console.log("Fetching facilities...");
+                    const facRes = await fetch(`${API_BASE}/facilities`, {
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
+                    const facData = await facRes.json();
+                    console.log("Facilities fetched:", facData);
+                    if (Array.isArray(facData)) {
+                        setFacilities(facData);
+                    } else {
+                        setFacilities(facData.facilities || []);
+                    }
+                } catch (error) {
+                    console.error("Error fetching facilities:", error);
+                }
+            } else {
+                console.log("Facilities already loaded:", facilities);
             }
 
         } catch (err) {
@@ -238,7 +252,7 @@ export default function PresidentBookings() {
                             ) : (
                                 filteredBookings.map((b) => {
                                     const role = (b.user_role || "").toLowerCase();
-                                    const isPriority = role.includes("dean") || role.includes("council");
+                                    const isPriority = b.user_role_specification?.toLowerCase() === "university account";
                                     const status = b.status?.toLowerCase() || "";
 
                                     // Format Helpers

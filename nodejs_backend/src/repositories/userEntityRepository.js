@@ -5,7 +5,7 @@ class UserEntityRepository {
     // 🔎 Find user by ID
     static async findById(id) {
         const [rows] = await pool.query(
-            `SELECT u.*, r.name AS role_name, pi.fname, pi.lname, pi.mname, pi.email
+            `SELECT u.*, r.name AS role_name, pi.fname, pi.lname, pi.middle_name, pi.email
        FROM users u
        JOIN roles r ON r.id = u.role_id
        LEFT JOIN personal_info pi ON pi.userID = u.id
@@ -18,7 +18,7 @@ class UserEntityRepository {
     // 🔎 Find by username
     static async findByUsername(username) {
         const [rows] = await pool.query(
-            `SELECT u.*, r.name AS role_name, pi.fname, pi.lname, pi.mname, pi.email
+            `SELECT u.*, r.name AS role_name, pi.fname, pi.lname, pi.middle_name, pi.email
        FROM users u
        JOIN roles r ON r.id = u.role_id
        LEFT JOIN personal_info pi ON pi.userID = u.id
@@ -31,7 +31,7 @@ class UserEntityRepository {
     // 🔎 Find users by Role Name
     static async findByRole(roleName) {
         const [rows] = await pool.query(
-            `SELECT u.*, r.name AS role_name, pi.fname, pi.lname, pi.mname, pi.email
+            `SELECT u.*, r.name AS role_name, pi.fname, pi.lname, pi.middle_name, pi.email
        FROM users u
        JOIN roles r ON r.id = u.role_id
        LEFT JOIN personal_info pi ON pi.userID = u.id
@@ -44,7 +44,7 @@ class UserEntityRepository {
     // 📋 Get all users with email
     static async findAll() {
         const [rows] = await pool.query(
-            `SELECT u.*, r.name AS role_name, pi.fname, pi.lname, pi.mname, pi.email
+            `SELECT u.*, r.name AS role_name, pi.fname, pi.lname, pi.middle_name, pi.email
        FROM users u
        JOIN roles r ON r.id = u.role_id
        LEFT JOIN personal_info pi ON pi.userID = u.id`

@@ -1,5 +1,6 @@
 import React from "react";
 import { MapPin, Users, Image as ImageIcon } from "lucide-react";
+import { getBackendUrl } from "@/utils/config";
 
 interface FacilityHeroProps {
     facility: any;
@@ -22,7 +23,7 @@ export default function FacilityHero({ facility }: FacilityHeroProps) {
             <div className="w-full md:w-1/3 h-64 md:h-auto bg-gray-100 relative flex items-center justify-center overflow-hidden">
                 {facility.imagepath ? (
                     <img
-                        src={facility.imagepath.startsWith('http') ? facility.imagepath : `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:5000${facility.imagepath}`}
+                        src={facility.imagepath.startsWith('http') ? facility.imagepath : `${getBackendUrl()}${facility.imagepath}`}
                         alt={facility.facility_name}
                         className="w-full h-full object-cover"
                     />

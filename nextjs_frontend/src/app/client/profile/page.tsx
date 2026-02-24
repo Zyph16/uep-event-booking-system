@@ -3,8 +3,16 @@
 import React, { useState, useEffect } from "react";
 import { User, MapPin, Save, Shield } from "lucide-react";
 import StatusModal from "@/components/shared/StatusModal";
+import { getApiBaseUrl } from "@/utils/config";
 
-const API_BASE = "http://192.168.1.31:5000/api";
+import {
+    regions,
+    provinces,
+    cities,
+    barangays,
+} from "phil-reg-prov-mun-brgy";
+
+// const API_BASE = "http://localhost:5000/api";
 
 export default function ProfilePage() {
     const [formData, setFormData] = useState({
@@ -16,8 +24,10 @@ export default function ProfilePage() {
         lname: "",
         phone: "",
         street: "",
-        city: "",
+        region: "",
         province: "",
+        city: "",
+        barangay: "",
         bookingsCount: 0,
         personalInfoId: null as number | null,
         userId: null as number | null,
@@ -40,7 +50,7 @@ export default function ProfilePage() {
                 if (!token) return; // Handle auth redirect globally or here
 
                 // 1. Get User Data (Role, Email, Username)
-                const userRes = await fetch(`${API_BASE}/users/me`, {
+                const userRes = await fetch(`${getApiBaseUrl()}/users/me`, {
                     headers: { "Authorization": `Bearer ${token}` }
                 });
                 if (!userRes.ok) throw new Error("Failed to fetch user");
@@ -48,7 +58,7 @@ export default function ProfilePage() {
                 const userData = userResponse.user || userResponse;
 
                 // 2. Get Personal Info
-                const infoRes = await fetch(`${API_BASE}/personalinfo/me`, {
+                const infoRes = await fetch(`${getApiBaseUrl()}/personalinfo/me`, {
                     headers: { "Authorization": `Bearer ${token}` }
                 });
 
@@ -76,8 +86,10 @@ export default function ProfilePage() {
                         lname: pInfo.lname || "",
                         phone: pInfo.phone || "",
                         street: pInfo.street || "",
-                        city: pInfo.city || "",
+                        region: "", // Not stored
                         province: pInfo.province || "",
+                        city: pInfo.city || "",
+                        barangay: pInfo.barangay || "",
                         personalInfoId: pInfo.personalinfoID || null,
 
                         // If Personal Info has specific email, use it, else keep User email
@@ -95,8 +107,24 @@ export default function ProfilePage() {
         fetchData();
     }, []);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => {
+            const updates: any = { [name]: value };
+
+            if (name === "region") {
+                updates.province = "";
+                updates.city = "";
+                updates.barangay = "";
+            } else if (name === "province") {
+                updates.city = "";
+                updates.barangay = "";
+            } else if (name === "city") {
+                updates.barangay = "";
+            }
+
+            return { ...prev, ...updates };
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -125,6 +153,7 @@ export default function ProfilePage() {
                 phone: formData.phone,
                 street: formData.street,
                 city: formData.city,
+                barangay: formData.barangay,
                 province: formData.province,
                 userID: formData.userId // Ensure link to user
             };
@@ -132,7 +161,7 @@ export default function ProfilePage() {
             let res;
             if (formData.personalInfoId) {
                 // UPDATE
-                res = await fetch(`${API_BASE}/personalinfo/${formData.personalInfoId}`, {
+                res = await fetch(`${getApiBaseUrl()}/personalinfo/${formData.personalInfoId}`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
@@ -142,7 +171,7 @@ export default function ProfilePage() {
                 });
             } else {
                 // CREATE
-                res = await fetch(`${API_BASE}/personalinfo`, {
+                res = await fetch(`${getApiBaseUrl()}/personalinfo`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -268,7 +297,7 @@ export default function ProfilePage() {
                         </div>
                     </div>
 
-                    {/* Address */}
+                    {/* Address Dropdowns */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
                         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
                             <MapPin className="text-[#1f3c88]" />
@@ -280,14 +309,73 @@ export default function ProfilePage() {
                                 <label className="block text-sm font-semibold text-slate-600 mb-2">Street Address</label>
                                 <input type="text" name="street" value={formData.street} onChange={handleChange} suppressHydrationWarning className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-[#1f3c88] outline-none transition-all" />
                             </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Region */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-600 mb-2">City / Municipality</label>
-                                    <input type="text" name="city" value={formData.city} onChange={handleChange} suppressHydrationWarning className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-[#1f3c88] outline-none transition-all" />
+                                    <label className="block text-sm font-semibold text-slate-600 mb-2">Region</label>
+                                    <select
+                                        name="region"
+                                        value={formData.region}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-[#1f3c88] outline-none transition-all"
+                                    >
+                                        <option value="">Select Region</option>
+                                        {regions.map((reg: any) => (
+                                            <option key={reg.reg_code} value={reg.reg_code}>{reg.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
+
+                                {/* Province */}
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-600 mb-2">Province</label>
-                                    <input type="text" name="province" value={formData.province} onChange={handleChange} suppressHydrationWarning className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-[#1f3c88] outline-none transition-all" />
+                                    <select
+                                        name="province"
+                                        value={formData.province}
+                                        onChange={handleChange}
+                                        disabled={!formData.region}
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-[#1f3c88] outline-none transition-all disabled:opacity-50"
+                                    >
+                                        <option value="">Select Province</option>
+                                        {(provinces || []).filter((p: any) => p.reg_code === formData.region).map((prov: any) => (
+                                            <option key={prov.prov_code} value={prov.prov_code}>{prov.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* City / Municipality */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-600 mb-2">City / Municipality</label>
+                                    <select
+                                        name="city"
+                                        value={formData.city}
+                                        onChange={handleChange}
+                                        disabled={!formData.province}
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-[#1f3c88] outline-none transition-all disabled:opacity-50"
+                                    >
+                                        <option value="">Select City/Municipality</option>
+                                        {(cities || []).filter((c: any) => c.prov_code === formData.province).map((city: any) => (
+                                            <option key={city.mun_code} value={city.mun_code}>{city.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Barangay */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-600 mb-2">Barangay</label>
+                                    <select
+                                        name="barangay"
+                                        value={formData.barangay}
+                                        onChange={handleChange}
+                                        disabled={!formData.city}
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-[#1f3c88] outline-none transition-all disabled:opacity-50"
+                                    >
+                                        <option value="">Select Barangay</option>
+                                        {(barangays || []).filter((b: any) => b.mun_code === formData.city).map((brgy: any) => (
+                                            <option key={brgy.brgy_code} value={brgy.name}>{brgy.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
                         </div>

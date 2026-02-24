@@ -6,12 +6,13 @@ import {
     Filter,
     Eye,
     Edit2,
-    Calendar as CalendarIcon
+    Calendar as CalendarIcon,
+    Download,
+    FileText
 } from "lucide-react";
 import BookingDetailModal from "@/components/pm/BookingDetailModal";
 import EditBookingModal from "@/components/pm/EditBookingModal";
-
-const API_BASE = "http://192.168.1.31:5000/api";
+import { getApiBaseUrl } from "@/utils/config";
 
 export default function PMReports() {
     const [bookings, setBookings] = useState<any[]>([]);
@@ -25,6 +26,9 @@ export default function PMReports() {
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
 
+    // const API_BASE = "http://localhost:5000/api"; // Commented out as per instruction
+    const API_BASE = getApiBaseUrl(); // Using the imported utility function
+
     const loadData = async () => {
         setLoading(true);
         try {
@@ -34,7 +38,7 @@ export default function PMReports() {
 
             const user = JSON.parse(userData);
 
-            const res = await fetch(`${API_BASE}/bookings/details`, {
+            const res = await fetch(`${getApiBaseUrl()}/bookings/details`, {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             const data = await res.json();

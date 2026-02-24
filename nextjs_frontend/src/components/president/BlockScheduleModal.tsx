@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Calendar as CalendarIcon, Clock, ShieldAlert, Trash2, List, Plus } from "lucide-react";
+import { getApiBaseUrl } from "@/utils/config";
 
 interface BlockScheduleModalProps {
     isOpen: boolean;
@@ -9,7 +10,7 @@ interface BlockScheduleModalProps {
     facilities: any[];
 }
 
-const API_BASE = "http://192.168.1.31:5000/api";
+// const API_BASE = "http://localhost:5000/api";
 
 export default function BlockScheduleModal({ isOpen, onClose, facilities }: BlockScheduleModalProps) {
     const [activeTab, setActiveTab] = useState<'create' | 'manage'>('create');
@@ -30,7 +31,7 @@ export default function BlockScheduleModal({ isOpen, onClose, facilities }: Bloc
     const loadBlocks = async () => {
         try {
             const token = localStorage.getItem("token");
-            const res = await fetch(`${API_BASE}/bookings/details`, {
+            const res = await fetch(`${getApiBaseUrl()}/bookings/details`, {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             const data = await res.json();
@@ -56,6 +57,26 @@ export default function BlockScheduleModal({ isOpen, onClose, facilities }: Bloc
                 ? prev.repeatDays.filter(d => d !== day)
                 : [...prev.repeatDays, day]
         }));
+    };
+
+    const handleDelete = async (id: number) => {
+        if (!confirm("Are you sure you want to remove this block?")) return;
+        try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(`${getApiBaseUrl()}/bookings/${id}`, {
+                method: 'DELETE',
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                alert("Block removed successfully.");
+                loadBlocks();
+            } else {
+                alert("Failed to remove block.");
+            }
+        } catch (err) {
+            console.error(err);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -102,7 +123,7 @@ export default function BlockScheduleModal({ isOpen, onClose, facilities }: Bloc
                     status: 'Approved'
                 };
 
-                const res = await fetch(`${API_BASE}/bookings`, {
+                const res = await fetch(`${getApiBaseUrl()}/bookings`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -125,25 +146,6 @@ export default function BlockScheduleModal({ isOpen, onClose, facilities }: Bloc
                 repeatDays: []
             });
             setActiveTab('manage');
-        } catch (err) {
-            console.error(err);
-            alert("An error occurred while creating blocks.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDelete = async (id: number) => {
-        if (!confirm("Are you sure you want to cancel this block?")) return;
-        try {
-            const token = localStorage.getItem("token");
-            const res = await fetch(`${API_BASE}/bookings/${id}`, {
-                method: "DELETE",
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            if (res.ok) {
-                loadBlocks();
-            }
         } catch (err) {
             console.error(err);
         }
