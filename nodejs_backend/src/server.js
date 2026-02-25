@@ -89,23 +89,26 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Not Found' });
 });
 
-// Start Server
-// Start Server
-// Start Server
-app.listen(PORT, '0.0.0.0', async () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Network access enabled: http://<YOUR-IP-ADDRESS>:${PORT}`);
-    try {
-        const connection = await pool.getConnection();
-        console.log('Database connected successfully');
-        connection.release();
+// Export the app for Vercel Serverless Functions
+module.exports = app;
 
-        // Start Cron Jobs
-        const autoRejectJob = require('./jobs/autoRejectJob');
-        autoRejectJob.start();
-        console.log('Auto-Reject Job scheduled.');
+// Only bind to a specific port if running locally or on a standard VPS (not Vercel)
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    app.listen(PORT, '0.0.0.0', async () => {
+        console.log(`Server running on port ${PORT}`);
+        console.log(`Network access enabled: http://<YOUR-IP-ADDRESS>:${PORT}`);
+        try {
+            const connection = await pool.getConnection();
+            console.log('Database connected successfully');
+            connection.release();
 
-    } catch (e) {
-        console.error('Database connection failed:', e);
-    }
-});
+            // Start Cron Jobs
+            const autoRejectJob = require('./jobs/autoRejectJob');
+            autoRejectJob.start();
+            console.log('Auto-Reject Job scheduled.');
+
+        } catch (e) {
+            console.error('Database connection failed:', e);
+        }
+    });
+}
