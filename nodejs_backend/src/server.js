@@ -107,8 +107,9 @@ app.use((req, res) => {
 // Export the app for Vercel Serverless Functions
 module.exports = app;
 
-// Only bind to a specific port if running locally or on a standard VPS (not Vercel)
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+// Only bind to a specific port if running locally (not Vercel)
+// Vercel Serverless functions do not support persistent app.listen()
+if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, '0.0.0.0', async () => {
         console.log(`Server running on port ${PORT}`);
         console.log(`Network access enabled: http://<YOUR-IP-ADDRESS>:${PORT}`);
@@ -125,5 +126,13 @@ if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
         } catch (e) {
             console.error('Database connection failed:', e);
         }
+    });
+} else {
+    // If in production (Vercel), we still want to initialize the database connection pool eagerly
+    pool.getConnection().then(connection => {
+        console.log('Database connected successfully (Serverless)');
+        connection.release();
+    }).catch(e => {
+        console.error('Database connection failed (Serverless):', e);
     });
 }
