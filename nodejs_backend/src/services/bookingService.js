@@ -430,14 +430,8 @@ class BookingService {
         if (!user) return requestedAction; // Or throw error
 
         const currentStatus = booking.status;
-        // Debug Log
-        console.log('[DEBUG] User Object:', JSON.stringify(user, null, 2));
         const rawRole = (user.roleName || user.role_name || '');
-        console.log('[DEBUG] Raw Role:', rawRole);
-
         const role = rawRole.toUpperCase().trim();
-        console.log('[DEBUG] Processed Role:', role, 'Length:', role.length);
-        console.log('[DEBUG] Is President?', ['UNIVERSITY PRESIDENT', 'PRESIDENT'].includes(role));
 
         const action = requestedAction.toLowerCase();
 

@@ -4,7 +4,6 @@ import Link from "next/link";
 import Calendar from "@/components/shared/Calendar";
 import { useEffect, useState } from "react";
 import { Filter, ChevronDown, Check } from "lucide-react";
-import { getApiBaseUrl } from "@/utils/config";
 
 export default function Hero() {
     const [events, setEvents] = useState<any[]>([]);
@@ -187,10 +186,10 @@ export default function Hero() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const apiBase = getApiBaseUrl();
+                const hostname = window.location.hostname;
 
                 // Fetch All Facilities for Dropdown
-                const facRes = await fetch(`${apiBase}/facilities/public`);
+                const facRes = await fetch(`http://${hostname}:5000/api/facilities/public`);
                 if (facRes.ok) {
                     const facData = await facRes.json();
                     const allFacilities = facData.facilities.map((f: any) => f.facility_name).sort();
@@ -198,7 +197,7 @@ export default function Hero() {
                 }
 
                 // Fetch Public Bookings
-                const bookRes = await fetch(`${apiBase}/bookings/public`);
+                const bookRes = await fetch(`http://${hostname}:5000/api/bookings/public`);
                 if (bookRes.ok) {
                     const bookData = await bookRes.json();
                     setRawBookings(bookData.bookings || []);
