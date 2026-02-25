@@ -14,39 +14,29 @@ const PORT = process.env.PORT || 3000;
 app.use(helmet({ crossOriginResourcePolicy: false })); // allows serving static images cross-origin
 
 // Middleware
-const allowedOrigins = [
-    "https://uepbooking-git-main-zyph16s-projects.vercel.app",
-    "https://uepbooking.vercel.app",
-    "http://localhost:3000"
-];
-
-const corsOptions = {
+// Dynamic CORS for Vercel + Localhost
+app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
+
+        // Allow requests with no origin (Postman, curl, mobile apps)
         if (!origin) return callback(null, true);
 
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, origin); // MUST return the exact origin when credentials: true
+        // Allow localhost
+        if (origin.includes("localhost")) {
+            return callback(null, origin); // MUST return exact origin for credentials: true
         }
 
-        // Allow localhost and standard local network IPs
-        if (origin.startsWith('http://localhost') ||
-            origin.startsWith('http://127.0.0.1') ||
-            origin.match(/^http:\/\/192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$/) ||
-            origin.match(/^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$/) ||
-            origin.match(/^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}(:\d+)?$/)) {
-            return callback(null, origin); // MUST return the exact origin when credentials: true
+        // Allow ALL Vercel deployments (preview + production)
+        if (origin.endsWith(".vercel.app")) {
+            return callback(null, origin); // MUST return exact origin for credentials: true
         }
 
-        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-        return callback(new Error(msg), false);
+        return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-Auth-Token']
-};
-
-app.use(cors(corsOptions));
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
