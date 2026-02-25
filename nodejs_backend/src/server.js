@@ -47,7 +47,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('/(.*)', cors(corsOptions)); // explicitly apply to OPTIONS preflights
+app.options(/.*/, cors(corsOptions)); // explicitly apply to OPTIONS preflights
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
