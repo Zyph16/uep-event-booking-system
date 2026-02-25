@@ -15,7 +15,7 @@ app.use(helmet({ crossOriginResourcePolicy: false })); // allows serving static 
 
 // Middleware
 const allowedOrigins = [
-    "https://uepbooking.vercel.app",
+    "https://uepbooking-git-main-zyph16s-projects.vercel.app",
     "http://localhost:3000"
 ];
 
