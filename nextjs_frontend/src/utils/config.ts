@@ -22,7 +22,7 @@ export const getApiBaseUrl = () => {
     }
 
     // 3. Fallback for server-side rendering (SSR)
-    return process.env.API_BASE_URL || 'http://localhost:5000/api';
+    return process.env.API_BASE_URL || 'https://uepbookingbackend.vercel.app/api';
 };
 
 /**
@@ -47,7 +47,7 @@ export const getBackendUrl = () => {
     }
 
     // 3. SSR fallback
-    return process.env.BACKEND_URL || 'http://localhost:5000';
+    return process.env.BACKEND_URL || 'https://uepbookingbackend.vercel.app';
 };
 
 /**
