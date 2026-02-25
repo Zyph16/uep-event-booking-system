@@ -61,12 +61,18 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Not Found' });
 });
 
-// Start Server
-// Start Server
-// Start Server
-app.listen(PORT, '0.0.0.0', async () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Network access enabled: http://<YOUR-IP-ADDRESS>:${PORT}`);
+// Only start the server if this file is run directly (e.g., `node src/server.js`)
+// If it is imported as a module (e.g., by Vercel Serverless in api/index.js), do NOT start the server.
+if (require.main === module) {
+    app.listen(PORT, '0.0.0.0', async () => {
+        console.log(`Server running on port ${PORT}`);
+        console.log(`Network access enabled: http://<YOUR-IP-ADDRESS>:${PORT}`);
+    });
+}
+
+// Background Task Initialization (Database & Cron Jobs)
+// Using an IIFE to run this asynchronously upon module initialization in Vercel
+(async () => {
     try {
         const connection = await pool.getConnection();
         console.log('Database connected successfully');
@@ -76,8 +82,11 @@ app.listen(PORT, '0.0.0.0', async () => {
         const autoRejectJob = require('./jobs/autoRejectJob');
         autoRejectJob.start();
         console.log('Auto-Reject Job scheduled.');
-
     } catch (e) {
         console.error('Database connection failed:', e);
+        // Do not crash the app if DB fails to connect initially; APIs will surface the error on request
     }
-});
+})();
+
+// Export the app for Vercel Serverless Execution
+module.exports = app;
