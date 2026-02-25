@@ -47,6 +47,9 @@ app.use(express.urlencoded({ extended: true }));
 const methodOverride = require('method-override');
 app.use(methodOverride('_method'));
 
+// Handle pre-flight explicitly
+app.options('*', cors());
+
 // Static files (Uploads)
 // Serving 'public' directory from the root of nodejs_backend
 app.use(express.static(path.join(__dirname, '../public')));
