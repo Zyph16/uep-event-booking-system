@@ -8,15 +8,8 @@ const roleMiddleware = require('../middleware/roleMiddleware');
 const Roles = require('../core/roles');
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary = require('cloudinary').v2;
+const cloudinary = require('../config/cloudinary');
 const path = require('path');
-
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
 
 // Multer Config (Cloudinary)
 const storage = new CloudinaryStorage({
