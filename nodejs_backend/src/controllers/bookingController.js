@@ -208,7 +208,7 @@ class BookingController {
                 return res.status(400).json({ error: 'No file uploaded' });
             }
 
-            const receiptUrl = `/uploads/receipts/${req.file.filename}`;
+            const receiptUrl = req.file.path;
 
             // The service should verify ownership and update the booking
             const item = await BookingService.uploadReceipt(id, user.id, receiptUrl, user.role_id);
