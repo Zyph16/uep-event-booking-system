@@ -37,3 +37,12 @@ export const getBackendUrl = () => {
     // 3. SSR fallback
     return process.env.BACKEND_URL || 'http://localhost:5000';
 };
+
+/**
+ * Helper to display images, supporting both local legacy relative URLs and absolute Cloudinary URLs.
+ */
+export const getDisplayImageUrl = (path: string | undefined | null) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path; // Already an absolute Cloudinary/external URL
+    return `${getBackendUrl()}${path.startsWith('/') ? '' : '/'}${path}`;
+};

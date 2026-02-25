@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { X, Info, CheckCircle, ChevronDown, Calendar as CalendarIcon, MapPin, Users, Plus, ShieldCheck, AlertTriangle, ArrowLeft, Filter, Check, Box as BoxIcon } from "lucide-react";
 import Calendar from "@/components/shared/Calendar";
 import StatusModal from "@/components/shared/StatusModal";
-import { getApiBaseUrl, getBackendUrl } from "@/utils/config";
+import { getApiBaseUrl, getBackendUrl, getDisplayImageUrl } from "@/utils/config";
 
 interface BookingModalProps {
     isOpen: boolean;
@@ -387,11 +387,7 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
     if (!isOpen || !facility) return null;
 
     // Image handling
-    const imageUrl = facility.imagepath
-        ? (facility.imagepath.startsWith('http')
-            ? facility.imagepath
-            : `${getBackendUrl()}${facility.imagepath.startsWith('/') ? '' : '/'}${facility.imagepath}`)
-        : null;
+    const imageUrl = getDisplayImageUrl(facility.imagepath);
 
     // Validation Warnings
     const getTimeWarnings = () => {

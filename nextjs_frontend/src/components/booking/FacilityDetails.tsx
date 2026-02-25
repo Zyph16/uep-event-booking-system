@@ -3,7 +3,7 @@
 import React, { useRef, useState } from "react";
 // import Image from "next/image";
 import { ArrowLeft, ArrowRight, MapPin, Users, Info, Calendar, CheckCircle, AlertCircle, Package, ChevronLeft, ChevronRight } from "lucide-react";
-import { getBackendUrl } from "@/utils/config";
+import { getBackendUrl, getDisplayImageUrl } from "@/utils/config";
 import AlbumCard from "@/components/cards/albumCards/AlbumCard";
 
 interface FacilityDetailsProps {
@@ -57,11 +57,9 @@ export default function FacilityDetails({ facility, onBook, variant = 'default',
     }
 
     // Handle image URL
-    const defaultImageUrl = facility.imagepath
-        ? (facility.imagepath.startsWith('http')
-            ? facility.imagepath
-            : `${getBackendUrl()}${facility.imagepath.startsWith('/') ? '' : '/'}${facility.imagepath}`)
-        : null;
+    const defaultImageUrl = facility && facility.imagepath
+        ? getDisplayImageUrl(facility.imagepath)
+        : '';
 
     const displayImageUrl = selectedPreviewImage || defaultImageUrl;
 
@@ -276,10 +274,10 @@ export default function FacilityDetails({ facility, onBook, variant = 'default',
                                                 style={{ animationDelay: `${idx * 75}ms`, animationFillMode: 'both' }}
                                             >
                                                 <img
-                                                    src={`${getBackendUrl()}${img.image_path}`}
+                                                    src={getDisplayImageUrl(img.image_path)}
                                                     alt="Facility Image"
                                                     className="w-full h-full object-cover hover:scale-110 transition-transform duration-300 cursor-pointer"
-                                                    onClick={() => setSelectedPreviewImage(`${getBackendUrl()}${img.image_path}`)}
+                                                    onClick={() => setSelectedPreviewImage(getDisplayImageUrl(img.image_path))}
                                                 />
                                             </div>
                                         ))}

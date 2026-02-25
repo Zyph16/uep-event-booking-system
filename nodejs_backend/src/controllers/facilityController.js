@@ -81,9 +81,9 @@ class FacilityController {
                 // OR we can manually move it if using memory storage.
                 // Simplest: use req.file.path relative to public.
 
-                // If we configure multer to save to public/uploads/facilities:
-                if (req.file.filename) {
-                    data.imagepath = '/uploads/facilities/' + req.file.filename;
+                // Cloudinary returns the full URL in file.path
+                if (req.file.path) {
+                    data.imagepath = req.file.path;
                 }
             }
         } else {
@@ -105,8 +105,9 @@ class FacilityController {
         if (req.is('multipart/form-data')) {
             data = req.body;
             if (req.file) {
-                if (req.file.filename) {
-                    data.imagepath = '/uploads/facilities/' + req.file.filename;
+                // Cloudinary returns the full URL in file.path
+                if (req.file.path) {
+                    data.imagepath = req.file.path;
                 }
             }
         } else {
@@ -168,7 +169,8 @@ class FacilityController {
         try {
             const newImages = [];
             for (const file of req.files) {
-                const imagePath = '/uploads/facilities/' + file.filename;
+                // Cloudinary returns the full URL directly in file.path
+                const imagePath = file.path;
                 const newImage = await FacilityService.addImageToAlbum(albumId, imagePath);
                 newImages.push(newImage);
             }

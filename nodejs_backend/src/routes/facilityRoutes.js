@@ -7,16 +7,24 @@ const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
 const Roles = require('../core/roles');
 const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
 const path = require('path');
 
-// Multer Config
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'public/uploads/facilities');
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'facility_' + uniqueSuffix + path.extname(file.originalname));
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Multer Config (Cloudinary)
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'uep_facilities', // The folder name in your Cloudinary account
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+        // transformation: [{ width: 1920, height: 1080, crop: 'limit' }] // Optional resizing
     }
 });
 const upload = multer({ storage: storage });
