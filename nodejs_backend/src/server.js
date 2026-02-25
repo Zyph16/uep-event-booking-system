@@ -61,32 +61,31 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Not Found' });
 });
 
-// Only start the server if this file is run directly (e.g., `node src/server.js`)
-// If it is imported as a module (e.g., by Vercel Serverless in api/index.js), do NOT start the server.
+// --- Server & Serverless Execution Logic ---
+
 if (require.main === module) {
+    // 1. LOCAL EXECUTION (e.g., node src/server.js)
+    // Here we start the server, open DB connections, and run background Cron Jobs
     app.listen(PORT, '0.0.0.0', async () => {
         console.log(`Server running on port ${PORT}`);
         console.log(`Network access enabled: http://<YOUR-IP-ADDRESS>:${PORT}`);
+
+        try {
+            const connection = await pool.getConnection();
+            console.log('Database connected successfully');
+            connection.release();
+
+            // Start Cron Jobs only when running locally or on a VPS
+            const autoRejectJob = require('./jobs/autoRejectJob');
+            autoRejectJob.start();
+            console.log('Auto-Reject Job scheduled.');
+        } catch (e) {
+            console.error('Database connection failed:', e);
+        }
     });
 }
 
-// Background Task Initialization (Database & Cron Jobs)
-// Using an IIFE to run this asynchronously upon module initialization in Vercel
-(async () => {
-    try {
-        const connection = await pool.getConnection();
-        console.log('Database connected successfully');
-        connection.release();
-
-        // Start Cron Jobs
-        const autoRejectJob = require('./jobs/autoRejectJob');
-        autoRejectJob.start();
-        console.log('Auto-Reject Job scheduled.');
-    } catch (e) {
-        console.error('Database connection failed:', e);
-        // Do not crash the app if DB fails to connect initially; APIs will surface the error on request
-    }
-})();
-
-// Export the app for Vercel Serverless Execution
+// 2. VERCEL SERVERLESS FUNCTION EXECUTION
+// Vercel only wants the raw Express `app` instance. It will handle the listening and ports automatically.
+// We do NOT start Cron jobs in Serverless mode because Serverless functions sleep when not active.
 module.exports = app;
