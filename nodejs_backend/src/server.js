@@ -1,12 +1,17 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 const routes = require('./routes');
 const { pool } = require('./core/database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Security Middleware
+app.use(helmet({ crossOriginResourcePolicy: false })); // allows serving static images cross-origin
 
 // Middleware
 app.use(cors({
@@ -18,7 +23,6 @@ app.use(cors({
         // Also allow specific ports if needed, but regex handles standard dev ports
         if (origin.startsWith('http://localhost') ||
             origin.startsWith('http://127.0.0.1') ||
-            origin.startsWith('https://uepbooking.vercel.app') ||
             origin.match(/^http:\/\/192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$/) ||
             origin.match(/^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$/) ||
             origin.match(/^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}(:\d+)?$/)) {
@@ -42,7 +46,31 @@ app.use(methodOverride('_method'));
 // Serving 'public' directory from the root of nodejs_backend
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Routes
+// Rate Limiting (Basic Protection against DDoS)
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 1000, // Limit each IP to 1000 requests per `window` (here, per 15 minutes)
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+app.use('/api', apiLimiter);
+
+// Testing / Health Check Routes
+app.get('/', (req, res) => {
+    res.status(200).json({
+        status: 'success',
+        message: 'UEP Event Organizer Backend is successfully running!'
+    });
+});
+
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'up',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Routes
 app.use('/api', routes);
 
@@ -61,31 +89,23 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Not Found' });
 });
 
-// --- Server & Serverless Execution Logic ---
+// Start Server
+// Start Server
+// Start Server
+app.listen(PORT, '0.0.0.0', async () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Network access enabled: http://<YOUR-IP-ADDRESS>:${PORT}`);
+    try {
+        const connection = await pool.getConnection();
+        console.log('Database connected successfully');
+        connection.release();
 
-if (require.main === module) {
-    // 1. LOCAL EXECUTION (e.g., node src/server.js)
-    // Here we start the server, open DB connections, and run background Cron Jobs
-    app.listen(PORT, '0.0.0.0', async () => {
-        console.log(`Server running on port ${PORT}`);
-        console.log(`Network access enabled: http://<YOUR-IP-ADDRESS>:${PORT}`);
+        // Start Cron Jobs
+        const autoRejectJob = require('./jobs/autoRejectJob');
+        autoRejectJob.start();
+        console.log('Auto-Reject Job scheduled.');
 
-        try {
-            const connection = await pool.getConnection();
-            console.log('Database connected successfully');
-            connection.release();
-
-            // Start Cron Jobs only when running locally or on a VPS
-            const autoRejectJob = require('./jobs/autoRejectJob');
-            autoRejectJob.start();
-            console.log('Auto-Reject Job scheduled.');
-        } catch (e) {
-            console.error('Database connection failed:', e);
-        }
-    });
-}
-
-// 2. VERCEL SERVERLESS FUNCTION EXECUTION
-// Vercel only wants the raw Express `app` instance. It will handle the listening and ports automatically.
-// We do NOT start Cron jobs in Serverless mode because Serverless functions sleep when not active.
-module.exports = app;
+    } catch (e) {
+        console.error('Database connection failed:', e);
+    }
+});
