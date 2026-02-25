@@ -3,11 +3,6 @@
  * This allows the frontend to work whether accessed via localhost or a local network IP (e.g., 192.168.x.x).
  */
 export const getApiBaseUrl = () => {
-    // 1. Check if a production Cloud URL is explicitly defined in .env
-    if (process.env.NEXT_PUBLIC_API_BASE_URL) {
-        return process.env.NEXT_PUBLIC_API_BASE_URL;
-    }
-
     // 2. Check if running in browser environment (Fallback for VPS / Local Network)
     if (typeof window !== 'undefined') {
         const hostname = window.location.hostname;
@@ -22,19 +17,14 @@ export const getApiBaseUrl = () => {
     }
 
     // 3. Fallback for server-side rendering (SSR)
-    return process.env.API_BASE_URL || 'https://uepbookingbackend.vercel.app/api';
+    return 'https://uepbookingbackend.vercel.app/api';
 };
 
 /**
  * Helper to get the Backend Base URL (for static files/images) dynamically.
  */
 export const getBackendUrl = () => {
-    // 1. Check if a production Cloud URL is explicitly defined in .env
-    if (process.env.NEXT_PUBLIC_BACKEND_URL) {
-        return process.env.NEXT_PUBLIC_BACKEND_URL;
-    }
-
-    // 2. Browser environment fallback
+    // Browser environment fallback
     if (typeof window !== 'undefined') {
         const hostname = window.location.hostname;
 
@@ -46,6 +36,6 @@ export const getBackendUrl = () => {
         return `http://${hostname}:5000`;
     }
 
-    // 3. SSR fallback
-    return process.env.BACKEND_URL || 'https://uepbookingbackend.vercel.app';
+    // SSR fallback
+    return 'https://uepbookingbackend.vercel.app';
 };
