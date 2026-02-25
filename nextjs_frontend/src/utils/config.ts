@@ -8,10 +8,16 @@ export const getApiBaseUrl = () => {
         return process.env.NEXT_PUBLIC_API_BASE_URL;
     }
 
-    // 2. Check if running in browser environment (Fallback for VPS / Local Network)
+    // 2. Check if running in browser environment
     if (typeof window !== 'undefined') {
         const hostname = window.location.hostname;
-        // Backend is assumed to be running on port 5000 on the same host
+
+        // Vercel deployment fallback (fixes Mixed Content HTTP errors)
+        if (hostname.includes('vercel.app')) {
+            return 'https://uepbookingbackend.vercel.app/api';
+        }
+
+        // Local Network / VPS fallback
         return `http://${hostname}:5000/api`;
     }
 
@@ -31,6 +37,12 @@ export const getBackendUrl = () => {
     // 2. Browser environment fallback
     if (typeof window !== 'undefined') {
         const hostname = window.location.hostname;
+
+        // Vercel deployment fallback (fixes Mixed Content HTTP errors)
+        if (hostname.includes('vercel.app')) {
+            return 'https://uepbookingbackend.vercel.app';
+        }
+
         return `http://${hostname}:5000`;
     }
 

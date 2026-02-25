@@ -19,8 +19,14 @@ app.use(cors({
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
 
+        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+
+        // Allow Vercel deployments
+        if (origin.includes('vercel.app') || origin.includes('uepbooking')) {
+            return callback(null, true);
+        }
+
         // Allow localhost and standard local network IPs
-        // Also allow specific ports if needed, but regex handles standard dev ports
         if (origin.startsWith('http://localhost') ||
             origin.startsWith('http://127.0.0.1') ||
             origin.match(/^http:\/\/192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$/) ||
@@ -29,7 +35,6 @@ app.use(cors({
             return callback(null, true);
         }
 
-        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
         return callback(new Error(msg), false);
     },
     credentials: true,
