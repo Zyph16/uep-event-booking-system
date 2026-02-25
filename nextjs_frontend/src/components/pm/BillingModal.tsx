@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, FileText, CreditCard, Send } from "lucide-react";
+import { X, FileText, CreditCard, Send, Receipt } from "lucide-react";
 import { getApiBaseUrl } from "@/utils/config";
 import FTCBillingStatement from "@/components/billing/FTC/FTCBillingStatement";
 import ACGBillingStatement from "@/components/billing/ACG/ACGBillingStatement";
@@ -127,11 +127,15 @@ export default function BillingModal({ isOpen, onClose, booking, onSuccess }: Bi
             <>
                 <div className={`fixed inset-0 z-[1050] flex items-center justify-center p-4 transition-all duration-300 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"} print:hidden`}>
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-                    <div className="bg-white w-full max-w-[900px] h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col relative z-10">
+                    <div className="bg-white w-full max-w-[900px] h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col relative z-10 animate-in fade-in zoom-in duration-200">
                         {/* Header */}
                         <div className="px-6 py-4 bg-gray-900 text-white flex justify-between items-center">
-                            <h2 className="text-lg font-bold">Generate Billing (FTC Layout)</h2>
-                            <button onClick={onClose}><X size={24} /></button>
+                            <h3 className="m-0 text-lg font-semibold flex items-center gap-2">
+                                <Receipt size={20} /> Generate Billing (FTC Layout)
+                            </h3>
+                            <button onClick={onClose} className="hover:text-red-200 transition-colors">
+                                <X size={24} />
+                            </button>
                         </div>
 
                         {/* Preview Area */}
@@ -143,9 +147,13 @@ export default function BillingModal({ isOpen, onClose, booking, onSuccess }: Bi
 
                         {/* Footer Actions */}
                         <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
-                            <button onClick={onClose} className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg">Cancel</button>
-                            <button onClick={handlePrint} className="px-4 py-2 bg-gray-800 text-white font-bold rounded-lg hover:bg-gray-900">Print Preview</button>
-                            <button onClick={handleSendBilling} disabled={loading} className="px-4 py-2 bg-[#e91e63] text-white font-bold rounded-lg hover:bg-[#c2185b] flex items-center gap-2">
+                            <button onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors">
+                                Close
+                            </button>
+                            <button onClick={handlePrint} className="px-4 py-2 bg-gray-800 text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors">
+                                Print Preview
+                            </button>
+                            <button onClick={handleSendBilling} disabled={loading} className="px-4 py-2 bg-[#e91e63] text-white font-bold rounded-lg hover:bg-[#c2185b] flex items-center gap-2 transition-colors">
                                 {loading ? "Sending..." : <><Send size={16} /> Send Billing</>}
                             </button>
                         </div>
@@ -164,11 +172,15 @@ export default function BillingModal({ isOpen, onClose, booking, onSuccess }: Bi
             <>
                 <div className={`fixed inset-0 z-[1050] flex items-center justify-center p-4 transition-all duration-300 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"} print:hidden`}>
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-                    <div className="bg-white w-full max-w-[900px] h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col relative z-10">
+                    <div className="bg-white w-full max-w-[900px] h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col relative z-10 animate-in fade-in zoom-in duration-200">
                         {/* Header */}
                         <div className="px-6 py-4 bg-gray-900 text-white flex justify-between items-center">
-                            <h2 className="text-lg font-bold">Generate Billing (ACG Layout)</h2>
-                            <button onClick={onClose}><X size={24} /></button>
+                            <h3 className="m-0 text-lg font-semibold flex items-center gap-2">
+                                <Receipt size={20} /> Generate Billing (ACG Layout)
+                            </h3>
+                            <button onClick={onClose} className="hover:text-red-200 transition-colors">
+                                <X size={24} />
+                            </button>
                         </div>
 
                         {/* Preview Area */}
@@ -180,9 +192,13 @@ export default function BillingModal({ isOpen, onClose, booking, onSuccess }: Bi
 
                         {/* Footer Actions */}
                         <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
-                            <button onClick={onClose} className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg">Cancel</button>
-                            <button onClick={handlePrint} className="px-4 py-2 bg-gray-800 text-white font-bold rounded-lg hover:bg-gray-900">Print Preview</button>
-                            <button onClick={handleSendBilling} disabled={loading} className="px-4 py-2 bg-[#e91e63] text-white font-bold rounded-lg hover:bg-[#c2185b] flex items-center gap-2">
+                            <button onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors">
+                                Close
+                            </button>
+                            <button onClick={handlePrint} className="px-4 py-2 bg-gray-800 text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors">
+                                Print Preview
+                            </button>
+                            <button onClick={handleSendBilling} disabled={loading} className="px-4 py-2 bg-[#e91e63] text-white font-bold rounded-lg hover:bg-[#c2185b] flex items-center gap-2 transition-colors">
                                 {loading ? "Sending..." : <><Send size={16} /> Send Billing</>}
                             </button>
                         </div>
