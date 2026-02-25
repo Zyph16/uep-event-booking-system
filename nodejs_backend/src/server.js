@@ -20,22 +20,31 @@ const allowedOrigins = [
     "http://localhost:3000"
 ];
 
-app.use(cors({
+const corsOptions = {
     origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
+
         if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
+            return callback(null, origin); // MUST return the exact origin when credentials: true
         }
-        return callback(new Error("Not allowed by CORS"));
+
+        // Allow localhost and standard local network IPs
+        if (origin.startsWith('http://localhost') ||
+            origin.startsWith('http://127.0.0.1') ||
+            origin.match(/^http:\/\/192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$/) ||
+            origin.match(/^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$/) ||
+            origin.match(/^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}(:\d+)?$/)) {
+            return callback(null, origin); // MUST return the exact origin when credentials: true
+        }
+
+        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+        return callback(new Error(msg), false);
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-}));
-
-app.options("*", cors());
-
-app.options("*", cors());
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-Auth-Token']
+};
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // explicitly apply to OPTIONS preflights

@@ -14,7 +14,7 @@ export const getApiBaseUrl = () => {
 
         // Vercel deployment fallback (fixes Mixed Content HTTP errors)
         if (hostname.includes('vercel.app')) {
-            return 'https://uepbookingbackend.vercel.app/api';
+            return 'https://uepbackend.vercel.app/api';
         }
 
         // Local Network / VPS fallback
@@ -22,7 +22,7 @@ export const getApiBaseUrl = () => {
     }
 
     // 3. Fallback for server-side rendering (SSR)
-    return process.env.API_BASE_URL || 'https://uepbookingbackend.vercel.app/api';
+    return process.env.API_BASE_URL || 'https://uepbackend.vercel.app/api';
 };
 
 /**
@@ -40,14 +40,14 @@ export const getBackendUrl = () => {
 
         // Vercel deployment fallback (fixes Mixed Content HTTP errors)
         if (hostname.includes('vercel.app')) {
-            return 'https://uepbookingbackend.vercel.app';
+            return 'https://uepbackend.vercel.app';
         }
 
         return `http://${hostname}:5000`;
     }
 
     // 3. SSR fallback
-    return process.env.BACKEND_URL || 'https://uepbookingbackend.vercel.app';
+    return process.env.BACKEND_URL || 'https://uepbackend.vercel.app';
 };
 
 /**
