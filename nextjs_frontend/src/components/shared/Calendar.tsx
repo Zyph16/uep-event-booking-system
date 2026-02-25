@@ -60,10 +60,10 @@ export default function Calendar({
 
         return (
             <div
-                className="flex justify-center items-center w-full h-full cursor-pointer hover:scale-125 transition-transform"
+                className="flex justify-center items-center flex-shrink-0 cursor-pointer hover:scale-125 transition-transform p-0.5"
             >
                 <div
-                    className="w-1.5 h-1.5 rounded-full"
+                    className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0 shadow-sm"
                     style={{ backgroundColor: color }}
                 ></div>
             </div>
