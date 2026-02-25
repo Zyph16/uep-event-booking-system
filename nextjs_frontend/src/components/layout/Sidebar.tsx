@@ -11,6 +11,7 @@ import {
     User as UserIcon
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { getApiBaseUrl } from "@/utils/config";
 
 interface SidebarProps {
     role: "ADMIN" | "PROJECT MANAGER" | "UNIVERSITY PRESIDENT" | "PRESIDENT";
@@ -34,8 +35,8 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
 
                 // Fetch latest personal info to ensure name is up-to-date
                 if (token) {
-                    const hostname = window.location.hostname;
-                    fetch(`http://${hostname}:5000/api/personalinfo/me`, {
+                    const API_BASE = getApiBaseUrl();
+                    fetch(`${API_BASE}/personalinfo/me`, {
                         headers: { "Authorization": `Bearer ${token}` }
                     })
                         .then(res => res.json())

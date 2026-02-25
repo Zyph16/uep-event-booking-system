@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Eye, EyeOff, User, Mail, Phone, MapPin, Building, Lock, Hash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import StatusModal from "@/components/shared/StatusModal";
+import { getApiBaseUrl } from "@/utils/config";
 
 export default function RegisterForm() {
     const router = useRouter();
@@ -54,8 +55,8 @@ export default function RegisterForm() {
                 }
             };
 
-            const hostname = window.location.hostname;
-            const response = await fetch(`http://${hostname}:5000/api/users/register`, {
+            const API_BASE = getApiBaseUrl();
+            const response = await fetch(`${API_BASE}/users/register`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

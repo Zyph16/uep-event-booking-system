@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { getApiBaseUrl } from "@/utils/config";
 
 export default function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
@@ -21,9 +22,9 @@ export default function LoginForm() {
         console.log("Form data:", data);
 
         try {
-            const hostname = window.location.hostname;
-            console.log(`Fetching http://${hostname}:5000/api/users/login...`);
-            const response = await fetch(`http://${hostname}:5000/api/users/login`, {
+            const API_BASE = getApiBaseUrl();
+            console.log(`Fetching ${API_BASE}/users/login...`);
+            const response = await fetch(`${API_BASE}/users/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
