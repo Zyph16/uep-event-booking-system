@@ -11,6 +11,8 @@ import {
     CheckCircle2,
     Lock
 } from "lucide-react";
+import StatusModal from "@/components/shared/StatusModal";
+import ConfirmModal from "@/components/shared/ConfirmModal";
 import PresidentBookingDetailModal from "@/components/president/PresidentBookingDetailModal";
 import BlockScheduleModal from "@/components/president/BlockScheduleModal";
 import { getApiBaseUrl } from "@/utils/config";
@@ -32,6 +34,21 @@ export default function PresidentBookings() {
     const [selectedBooking, setSelectedBooking] = useState<any>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+
+    // Modal States
+    const [statusModal, setStatusModal] = useState<{
+        isOpen: boolean;
+        status: "success" | "error" | "warning" | "info";
+        title: string;
+        message: string;
+    }>({ isOpen: false, status: "info", title: "", message: "" });
+
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+    }>({ isOpen: false, title: "", message: "", onConfirm: () => { } });
 
     const loadData = async () => {
         setLoading(true);
@@ -87,8 +104,16 @@ export default function PresidentBookings() {
         loadData();
     }, []);
 
-    const handleStatusUpdate = async (id: number, status: string, message: string) => {
-        if (!confirm(message)) return;
+    const handleStatusUpdate = (id: number, status: string, message: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Confirm Action",
+            message: message,
+            onConfirm: () => executeStatusUpdate(id, status)
+        });
+    };
+
+    const executeStatusUpdate = async (id: number, status: string) => {
         try {
             const token = localStorage.getItem("token");
             const res = await fetch(`${API_BASE}/bookings/${id}`, {
@@ -100,15 +125,31 @@ export default function PresidentBookings() {
                 body: JSON.stringify({ status })
             });
             if (res.ok) {
-                alert("Action successful!");
+                setStatusModal({
+                    isOpen: true,
+                    status: "success",
+                    title: "Success",
+                    message: "Action successful!"
+                });
                 setIsDetailOpen(false);
                 loadData();
             } else {
                 const err = await res.json();
-                alert(`Error: ${err.error || 'Failed to update status'}`);
+                setStatusModal({
+                    isOpen: true,
+                    status: "error",
+                    title: "Error",
+                    message: `Error: ${err.error || 'Failed to update status'}`
+                });
             }
         } catch (err) {
             console.error(err);
+            setStatusModal({
+                isOpen: true,
+                status: "error",
+                title: "Error",
+                message: "An unexpected error occurred."
+            });
         }
     };
 
@@ -349,6 +390,25 @@ export default function PresidentBookings() {
                 isOpen={isBlockModalOpen}
                 onClose={() => setIsBlockModalOpen(false)}
                 facilities={facilities}
+            />
+
+            {/* Action Modals */}
+            <StatusModal
+                isOpen={statusModal.isOpen}
+                onClose={() => setStatusModal(prev => ({ ...prev, isOpen: false }))}
+                status={statusModal.status}
+                title={statusModal.title}
+                message={statusModal.message}
+            />
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText="Yes, Proceed"
+                cancelText="No, Cancel"
             />
         </div>
     );
