@@ -9,7 +9,7 @@ export const getApiBaseUrl = () => {
 
         // If hosted on Vercel, explicitly route to Vercel Backend
         if (hostname.includes('vercel.app')) {
-            return 'https://uepbookingbackend.vercel.app/api';
+            return 'https://uepbackend.vercel.app/api';
         }
 
         // Backend is assumed to be running on port 5000 on the same host
@@ -17,7 +17,7 @@ export const getApiBaseUrl = () => {
     }
 
     // 3. Fallback for server-side rendering (SSR)
-    return 'https://uepbookingbackend.vercel.app/api';
+    return 'https://uepbackend.vercel.app/api';
 };
 
 /**
@@ -30,12 +30,12 @@ export const getBackendUrl = () => {
 
         // If hosted on Vercel, explicitly route to Vercel Backend
         if (hostname.includes('vercel.app')) {
-            return 'https://uepbookingbackend.vercel.app';
+            return 'https://uepbackend.vercel.app';
         }
 
         return `http://${hostname}:5000`;
     }
 
     // SSR fallback
-    return 'https://uepbookingbackend.vercel.app';
+    return 'https://uepbackend.vercel.app';
 };
