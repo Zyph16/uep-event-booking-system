@@ -1,9 +1,18 @@
-require('dotenv').config();
+const path = require('path');
+const dotenv = require('dotenv');
+
+// Load .env.local first, fallback to .env
+const envLocalPath = path.resolve(__dirname, '../.env.local');
+const envPath = path.resolve(__dirname, '../.env');
+
+dotenv.config({ path: envLocalPath });
+// If vars are missing, this fills them in from .env without overwriting .env.local
+dotenv.config({ path: envPath });
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const path = require('path');
 const routes = require('./routes');
 const { pool } = require('./core/database');
 
