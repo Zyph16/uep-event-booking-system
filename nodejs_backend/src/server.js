@@ -21,8 +21,14 @@ app.use(cors({
         // Allow requests with no origin (Postman, curl, mobile apps)
         if (!origin) return callback(null, true);
 
-        // Allow localhost
-        if (origin.includes("localhost")) {
+        // Allow localhost and local network IP addresses
+        if (
+            origin.includes("localhost") ||
+            origin.includes("127.0.0.1") ||
+            /http:\/\/192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$/.test(origin) ||
+            /http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$/.test(origin) ||
+            /http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}(:\d+)?$/.test(origin)
+        ) {
             return callback(null, origin); // MUST return exact origin for credentials: true
         }
 
