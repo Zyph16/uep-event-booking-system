@@ -937,20 +937,20 @@ export default function BookingModal({ isOpen, onClose, facility }: BookingModal
                                 <div className="bg-gray-50 border-t border-gray-100 p-3">
                                     <div className="flex flex-wrap justify-center gap-4 mb-2">
                                         <div className="flex items-center gap-1.5">
-                                            <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-                                            <span className="text-[10px] font-semibold text-gray-600">My Bookings</span>
+                                            <div className="w-2.5 h-2.5 rounded-full bg-[#22c55e]"></div>
+                                            <span className="text-[10px] font-semibold text-gray-600">Approved</span>
                                         </div>
                                         <div className="flex items-center gap-1.5">
-                                            <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
-                                            <span className="text-[10px] font-semibold text-gray-600">Booked</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-2.5 h-2.5 rounded-full bg-orange-500"></div>
+                                            <div className="w-2.5 h-2.5 rounded-full bg-[#f97316]"></div>
                                             <span className="text-[10px] font-semibold text-gray-600">Pending</span>
                                         </div>
                                         <div className="flex items-center gap-1.5">
-                                            <div className="w-2.5 h-2.5 rounded-full bg-pink-500"></div>
+                                            <div className="w-2.5 h-2.5 rounded-full bg-[#ec4899]"></div>
                                             <span className="text-[10px] font-semibold text-gray-600">Setup</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]"></div>
+                                            <span className="text-[10px] font-semibold text-gray-600">Reviewed</span>
                                         </div>
                                     </div>
                                     <div className="text-center text-[10px] text-gray-400">
