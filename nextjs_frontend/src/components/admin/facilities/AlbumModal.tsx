@@ -57,7 +57,7 @@ export default function AlbumModal({ isOpen, onClose, facility, onAlbumUpdate }:
         const token = localStorage.getItem("token");
 
         try {
-            const res = await fetch(`${API_BASE} /facilities/${facility.facilityID || facility.id}/albums`, {
+            const res = await fetch(`${API_BASE}/facilities/${facility.facilityID || facility.id}/albums`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`,
