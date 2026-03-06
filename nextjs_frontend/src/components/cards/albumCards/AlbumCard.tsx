@@ -17,7 +17,7 @@ export default function AlbumCard({ images = [], title, onClick }: AlbumCardProp
     return (
         <div
             onClick={onClick}
-            className="mb-2 w-[110px] hover:w-[170px] transition-[width] duration-200 ease-out m-0 p-0 overflow-visible group flex-shrink-0 cursor-pointer"
+            className="mb-2 w-[110px] hover:w-[170px] transition-[width] duration-200 ease-out m-0 p-0 overflow-visible group/card flex-shrink-0 cursor-pointer"
         >
 
             <div className="relative w-full h-[180px] flex items-center justify-start rounded-2xl overflow-hidden">
@@ -38,7 +38,7 @@ export default function AlbumCard({ images = [], title, onClick }: AlbumCardProp
                             >
                                 {/* Hover Text Overlay (Only on Top Card) */}
                                 {isTopCard && (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 border-none">
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 border-none">
                                         <span className="text-white text-[10px] font-bold uppercase tracking-wider text-center leading-tight px-1 drop-shadow-md">
                                             Click<br />Open<br />Album
                                         </span>
