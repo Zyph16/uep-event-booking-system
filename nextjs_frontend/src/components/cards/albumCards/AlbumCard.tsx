@@ -2,7 +2,7 @@
 
 import React from 'react';
 import './albumCard.css';
-import { getBackendUrl } from "@/utils/config";
+import { getDisplayImageUrl } from "@/utils/config";
 
 interface AlbumCardProps {
     images?: any[];
@@ -11,8 +11,6 @@ interface AlbumCardProps {
 }
 
 export default function AlbumCard({ images = [], title, onClick }: AlbumCardProps) {
-    const backendUrl = getBackendUrl();
-
     // We only display up to 6 images max to preserve the CSS stacking
     const displayImages = images.slice(0, 6);
 
@@ -32,7 +30,7 @@ export default function AlbumCard({ images = [], title, onClick }: AlbumCardProp
                                 key={idx}
                                 className="relative rounded-xl overflow-hidden"
                                 style={{
-                                    backgroundImage: `url(${backendUrl}${img.image_path})`,
+                                    backgroundImage: `url(${getDisplayImageUrl(img.image_path)})`,
                                     backgroundSize: 'cover',
                                     backgroundPosition: 'center',
                                     border: '4px solid white'
