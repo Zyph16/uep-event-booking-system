@@ -117,12 +117,16 @@ export default function AlbumModal({ isOpen, onClose, facility, onAlbumUpdate }:
                 body: formData
             });
 
-            if (!res.ok) throw new Error("Upload failed");
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                console.error("Backend Error Details:", errorData);
+                throw new Error(errorData.error || errorData.detail || `Upload failed with status ${res.status}`);
+            }
 
             setSelectedFiles([]);
             onAlbumUpdate();
-        } catch (err) {
-            alert("Failed to upload images.");
+        } catch (err: any) {
+            alert(`Failed to upload images: ${err.message}`);
         } finally {
             setIsUploading(false);
         }
