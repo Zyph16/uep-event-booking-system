@@ -68,7 +68,9 @@ export default function FacilitiesPage() {
 
             if (albumFacilityTarget) {
                 const updatedAlbumTarget = loadedFacilities.find((f: any) => (f.facilityID || f.id) === (albumFacilityTarget.facilityID || albumFacilityTarget.id));
-                if (updatedAlbumTarget) setAlbumFacilityTarget(updatedAlbumTarget);
+                if (updatedAlbumTarget) {
+                    setAlbumFacilityTarget({ ...updatedAlbumTarget }); // Create new reference so React spots the deep change
+                }
             }
 
         } catch (err) {

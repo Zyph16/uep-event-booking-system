@@ -29,7 +29,7 @@ export default function AlbumModal({ isOpen, onClose, facility, onAlbumUpdate }:
         if (facility && currentAlbum) {
             const updatedAlbum = facility.albums?.find((a: any) => a.id === currentAlbum.id);
             if (updatedAlbum) {
-                setCurrentAlbum(updatedAlbum);
+                setCurrentAlbum({ ...updatedAlbum });
             } else {
                 // Folder might have been deleted
                 setCurrentAlbum(null);
