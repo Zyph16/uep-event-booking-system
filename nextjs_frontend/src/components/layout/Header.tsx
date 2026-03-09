@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, User as UserIcon, Settings, Calendar, UserCircle, LayoutDashboard, Bell } from "lucide-react";
+import { LogOut, User as UserIcon, Settings, Calendar, UserCircle, LayoutDashboard } from "lucide-react";
+import NotificationDropdown from "./NotificationDropdown";
 
 export default function Header() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -87,15 +88,8 @@ export default function Header() {
                     <div className="profile-container relative flex items-center gap-5">
                         {isLoggedIn ? (
                             <div className="flex items-center gap-3 md:gap-4">
-                                {/* Notification Icon */}
-                                <button
-                                    className="relative p-2 text-white hover:bg-white/10 rounded-full transition-colors focus:outline-none"
-                                    aria-label="Notifications"
-                                >
-                                    <Bell size={20} />
-                                    {/* Unread badge indicator */}
-                                    <span className="absolute top-1 right-2 w-2 h-2 bg-[#e91e63] rounded-full border border-[#1f3c88]"></span>
-                                </button>
+                                {/* Notification Dropdown Component */}
+                                <NotificationDropdown />
 
                                 <div className="relative">
                                     <button

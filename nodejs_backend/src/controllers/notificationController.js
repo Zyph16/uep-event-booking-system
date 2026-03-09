@@ -78,6 +78,22 @@ class NotificationController {
             res.status(500).json({ error: e.message });
         }
     }
+    static async deleteMultiple(req, res) {
+        try {
+            const user = req.user;
+            if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+            const { ids } = req.body;
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ error: 'Invalid or empty IDs array' });
+            }
+
+            const affectedRows = await NotificationService.deleteMultiple(ids, user.id);
+            res.json({ message: `Deleted ${affectedRows} notifications`, affectedRows });
+        } catch (e) {
+            res.status(500).json({ error: e.message });
+        }
+    }
 }
 
 module.exports = NotificationController;

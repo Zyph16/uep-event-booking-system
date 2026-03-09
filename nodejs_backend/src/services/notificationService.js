@@ -28,6 +28,9 @@ class NotificationService {
     static async delete(id) {
         return NotificationRepository.delete(id);
     }
+    static async deleteMultiple(ids, userId) {
+        return NotificationRepository.deleteMultiple(ids, userId);
+    }
 }
 
 module.exports = NotificationService;

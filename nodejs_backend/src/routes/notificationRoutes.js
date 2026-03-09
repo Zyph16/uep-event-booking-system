@@ -10,6 +10,7 @@ const adminOnly = [authMiddleware, roleMiddleware(Roles.ADMIN)];
 router.post('/', authMiddleware, NotificationController.create);
 router.get('/my', authMiddleware, NotificationController.getMyNotifications);
 router.put('/read-all', authMiddleware, NotificationController.markAllRead);
+router.post('/bulk-delete', authMiddleware, NotificationController.deleteMultiple);
 router.get('/', adminOnly, NotificationController.findAll);
 router.get('/:id', authMiddleware, NotificationController.findOne);
 router.put('/:id', authMiddleware, NotificationController.update);

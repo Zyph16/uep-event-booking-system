@@ -59,6 +59,11 @@ class NotificationRepository {
         const [result] = await pool.query('DELETE FROM notifications WHERE notifID = ?', [id]);
         return result.affectedRows > 0;
     }
+    static async deleteMultiple(ids, userId) {
+        if (!ids || ids.length === 0) return 0;
+        const [result] = await pool.query('DELETE FROM notifications WHERE notifID IN (?) AND userID = ?', [ids, userId]);
+        return result.affectedRows;
+    }
 }
 
 module.exports = NotificationRepository;
