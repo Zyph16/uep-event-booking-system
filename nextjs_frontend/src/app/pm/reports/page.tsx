@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import BookingDetailModal from "@/components/pm/BookingDetailModal";
 import EditBookingModal from "@/components/pm/EditBookingModal";
+import StatusModal from "@/components/shared/StatusModal";
 import { getApiBaseUrl } from "@/utils/config";
 
 export default function PMReports() {
@@ -25,6 +26,19 @@ export default function PMReports() {
     const [selectedBooking, setSelectedBooking] = useState<any>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
+
+    // Status Modal State
+    const [statusModalConfig, setStatusModalConfig] = useState<{
+        isOpen: boolean;
+        status: "success" | "error" | "warning" | "info";
+        title: string;
+        message: string;
+    }>({
+        isOpen: false,
+        status: "success",
+        title: "",
+        message: ""
+    });
 
     // const API_BASE = "http://localhost:5000/api"; // Commented out as per instruction
     const API_BASE = getApiBaseUrl(); // Using the imported utility function
@@ -251,9 +265,22 @@ export default function PMReports() {
                 onClose={() => setIsEditOpen(false)}
                 booking={selectedBooking}
                 onSuccess={() => {
-                    alert("Booking updated successfully!");
+                    setStatusModalConfig({
+                        isOpen: true,
+                        status: "success",
+                        title: "Success",
+                        message: "Booking updated successfully!"
+                    });
                     loadData();
                 }}
+            />
+
+            <StatusModal
+                isOpen={statusModalConfig.isOpen}
+                onClose={() => setStatusModalConfig(prev => ({ ...prev, isOpen: false }))}
+                status={statusModalConfig.status}
+                title={statusModalConfig.title}
+                message={statusModalConfig.message}
             />
         </div>
     );

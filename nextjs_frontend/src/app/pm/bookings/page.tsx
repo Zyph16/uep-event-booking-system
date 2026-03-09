@@ -13,6 +13,7 @@ import {
 import BookingDetailModal from "@/components/pm/BookingDetailModal";
 import BillingModal from "@/components/pm/BillingModal";
 import ViewReceiptModal from "@/components/pm/ViewReceiptModal";
+import StatusModal from "@/components/shared/StatusModal";
 import { getApiBaseUrl, getBackendUrl } from "@/utils/config";
 import Image from "next/image";
 
@@ -35,6 +36,19 @@ export default function PMBookings() {
     const [isBillingOpen, setIsBillingOpen] = useState(false);
     const [isReceiptOpen, setIsReceiptOpen] = useState(false);
     const [selectedReceiptUrl, setSelectedReceiptUrl] = useState<string | null>(null);
+
+    // Status Modal State
+    const [statusModalConfig, setStatusModalConfig] = useState<{
+        isOpen: boolean;
+        status: "success" | "error" | "warning" | "info";
+        title: string;
+        message: string;
+    }>({
+        isOpen: false,
+        status: "success",
+        title: "",
+        message: ""
+    });
 
     const loadData = async () => {
         setLoading(true);
@@ -102,11 +116,22 @@ export default function PMBookings() {
                 body: JSON.stringify({ status })
             });
             if (res.ok) {
-                alert("Success!");
+                setStatusModalConfig({
+                    isOpen: true,
+                    status: "success",
+                    title: "Success",
+                    message: "Status updated successfully!"
+                });
                 loadData();
             }
         } catch (err) {
             console.error(err);
+            setStatusModalConfig({
+                isOpen: true,
+                status: "error",
+                title: "Error",
+                message: "An error occurred. Please try again."
+            });
         }
     };
 
@@ -403,7 +428,12 @@ export default function PMBookings() {
                 onClose={() => setIsBillingOpen(false)}
                 booking={selectedBooking}
                 onSuccess={() => {
-                    alert("Billing sent successfully!");
+                    setStatusModalConfig({
+                        isOpen: true,
+                        status: "success",
+                        title: "Success",
+                        message: "Billing sent successfully!"
+                    });
                     loadData();
                 }}
             />
@@ -413,6 +443,14 @@ export default function PMBookings() {
                 onClose={() => setIsReceiptOpen(false)}
                 receiptUrl={selectedReceiptUrl}
                 bookingId={selectedBooking?.bookingID}
+            />
+
+            <StatusModal
+                isOpen={statusModalConfig.isOpen}
+                onClose={() => setStatusModalConfig(prev => ({ ...prev, isOpen: false }))}
+                status={statusModalConfig.status}
+                title={statusModalConfig.title}
+                message={statusModalConfig.message}
             />
         </div>
     );
