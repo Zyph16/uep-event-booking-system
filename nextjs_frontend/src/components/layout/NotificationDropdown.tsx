@@ -120,6 +120,37 @@ export default function NotificationDropdown() {
         }
     };
 
+    const deleteAll = async () => {
+        if (notifications.length === 0) return;
+
+        if (!window.confirm("Are you sure you want to delete all notifications?")) return;
+
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+
+            const allIds = notifications.map(n => n.notifID);
+
+            const res = await fetch(`${API_BASE}/notifications/bulk-delete`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ ids: allIds })
+            });
+
+            if (res.ok) {
+                setNotifications([]);
+                setUnreadCount(0);
+                setSelectedIds([]);
+                setIsSelectionMode(false);
+            }
+        } catch (error) {
+            console.error("Error deleting all notifications:", error);
+        }
+    };
+
     const toggleSelection = (id: number) => {
         setSelectedIds(prev =>
             prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
@@ -181,16 +212,26 @@ export default function NotificationDropdown() {
                             )}
                         </div>
                         <div className="flex items-center gap-2">
-                            {isSelectionMode && selectedIds.length > 0 ? (
-                                <button
-                                    onClick={deleteSelected}
-                                    className="text-xs text-white bg-red-600 hover:bg-red-700 shadow-sm font-semibold flex items-center gap-1 transition-all px-2 py-1 rounded"
-                                >
-                                    <Trash2 size={14} />
-                                    Delete ({selectedIds.length})
-                                </button>
+                            {isSelectionMode ? (
+                                <>
+                                    {selectedIds.length > 0 && (
+                                        <button
+                                            onClick={deleteSelected}
+                                            className="text-xs text-white bg-red-600 hover:bg-red-700 shadow-sm font-semibold flex items-center gap-1 transition-all px-2 py-1 rounded"
+                                        >
+                                            <Trash2 size={14} />
+                                            Delete ({selectedIds.length})
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={deleteAll}
+                                        className="text-[10px] text-red-600 hover:bg-red-50 font-bold uppercase tracking-wider transition-all px-2 py-1 rounded border border-red-200 bg-white"
+                                    >
+                                        Delete All
+                                    </button>
+                                </>
                             ) : (
-                                unreadCount > 0 && !isSelectionMode && (
+                                unreadCount > 0 && (
                                     <button
                                         onClick={markAllAsRead}
                                         className="text-xs text-[#1f3c88] hover:text-[#0d2b6b] font-semibold flex items-center gap-1 transition-colors px-2 py-1 rounded hover:bg-blue-50"
