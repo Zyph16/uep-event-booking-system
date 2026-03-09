@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, User as UserIcon, Settings, Calendar, UserCircle, LayoutDashboard } from "lucide-react";
+import { LogOut, User as UserIcon, Settings, Calendar, UserCircle, LayoutDashboard, Bell } from "lucide-react";
 
 export default function Header() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -86,84 +86,96 @@ export default function Header() {
                 <div className="nav-right flex items-center relative ml-auto pr-4 md:pr-8">
                     <div className="profile-container relative flex items-center gap-5">
                         {isLoggedIn ? (
-                            <div className="relative">
+                            <div className="flex items-center gap-3 md:gap-4">
+                                {/* Notification Icon */}
                                 <button
-                                    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                                    className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors focus:outline-none"
+                                    className="relative p-2 text-white hover:bg-white/10 rounded-full transition-colors focus:outline-none"
+                                    aria-label="Notifications"
                                 >
-                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 flex items-center justify-center border border-white/30 overflow-hidden">
-                                        {/* Placeholder Avatar or Initials */}
-                                        <span className="font-bold text-sm md:text-lg">
-                                            {user?.username ? user.username.charAt(0).toUpperCase() : <UserIcon size={18} />}
-                                        </span>
-                                    </div>
-                                    <span className="font-medium hidden sm:block text-sm md:text-base">{user?.username || 'User'}</span>
+                                    <Bell size={20} />
+                                    {/* Unread badge indicator */}
+                                    <span className="absolute top-1 right-2 w-2 h-2 bg-[#e91e63] rounded-full border border-[#1f3c88]"></span>
                                 </button>
 
-                                {/* Dropdown Menu */}
-                                {isProfileDropdownOpen && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                                        <div className="px-4 py-2 border-b border-gray-100">
-                                            <p className="text-sm font-semibold text-gray-700 truncate">{user?.username}</p>
-                                            <p className="text-xs text-gray-500 capitalize">{user?.role_name || user?.roleName || 'User'}</p>
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                                        className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors focus:outline-none"
+                                    >
+                                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 flex items-center justify-center border border-white/30 overflow-hidden">
+                                            {/* Placeholder Avatar or Initials */}
+                                            <span className="font-bold text-sm md:text-lg">
+                                                {user?.username ? user.username.charAt(0).toUpperCase() : <UserIcon size={18} />}
+                                            </span>
                                         </div>
+                                        <span className="font-medium hidden sm:block text-sm md:text-base">{user?.username || 'User'}</span>
+                                    </button>
 
-                                        <div className="border-b border-gray-100">
-                                            {(user?.role_name === "ADMIN" || user?.roleName === "ADMIN") && (
+                                    {/* Dropdown Menu */}
+                                    {isProfileDropdownOpen && (
+                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <div className="px-4 py-2 border-b border-gray-100">
+                                                <p className="text-sm font-semibold text-gray-700 truncate">{user?.username}</p>
+                                                <p className="text-xs text-gray-500 capitalize">{user?.role_name || user?.roleName || 'User'}</p>
+                                            </div>
+
+                                            <div className="border-b border-gray-100">
+                                                {(user?.role_name === "ADMIN" || user?.roleName === "ADMIN") && (
+                                                    <Link
+                                                        href="/admin/dashboard"
+                                                        className="block px-4 py-2 text-sm text-blue-600 font-bold hover:bg-gray-50 flex items-center gap-2"
+                                                        onClick={() => setIsProfileDropdownOpen(false)}
+                                                    >
+                                                        <Settings size={16} />
+                                                        Admin Dashboard
+                                                    </Link>
+                                                )}
+                                                {(user?.role_name === "PROJECT MANAGER" || user?.roleName === "PROJECT MANAGER" || user?.role_name === "PROJECT_MANAGER") && (
+                                                    <Link
+                                                        href="/pm/dashboard"
+                                                        className="block px-4 py-2 text-sm text-blue-600 font-bold hover:bg-gray-50 flex items-center gap-2"
+                                                        onClick={() => setIsProfileDropdownOpen(false)}
+                                                    >
+                                                        <LayoutDashboard size={16} />
+                                                        PM Dashboard
+                                                    </Link>
+                                                )}
                                                 <Link
-                                                    href="/admin/dashboard"
-                                                    className="block px-4 py-2 text-sm text-blue-600 font-bold hover:bg-gray-50 flex items-center gap-2"
+                                                    href="/client/profile"
+                                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                                    onClick={() => setIsProfileDropdownOpen(false)}
+                                                >
+                                                    <UserCircle size={16} />
+                                                    Profile
+                                                </Link>
+                                                <Link
+                                                    href="/client/my-bookings"
+                                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                                    onClick={() => setIsProfileDropdownOpen(false)}
+                                                >
+                                                    <Calendar size={16} />
+                                                    My Bookings
+                                                </Link>
+                                                <Link
+                                                    href="/client/settings"
+                                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                                     onClick={() => setIsProfileDropdownOpen(false)}
                                                 >
                                                     <Settings size={16} />
-                                                    Admin Dashboard
+                                                    Settings
                                                 </Link>
-                                            )}
-                                            {(user?.role_name === "PROJECT MANAGER" || user?.roleName === "PROJECT MANAGER" || user?.role_name === "PROJECT_MANAGER") && (
-                                                <Link
-                                                    href="/pm/dashboard"
-                                                    className="block px-4 py-2 text-sm text-blue-600 font-bold hover:bg-gray-50 flex items-center gap-2"
-                                                    onClick={() => setIsProfileDropdownOpen(false)}
-                                                >
-                                                    <LayoutDashboard size={16} />
-                                                    PM Dashboard
-                                                </Link>
-                                            )}
-                                            <Link
-                                                href="/client/profile"
-                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                                                onClick={() => setIsProfileDropdownOpen(false)}
-                                            >
-                                                <UserCircle size={16} />
-                                                Profile
-                                            </Link>
-                                            <Link
-                                                href="/client/my-bookings"
-                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                                                onClick={() => setIsProfileDropdownOpen(false)}
-                                            >
-                                                <Calendar size={16} />
-                                                My Bookings
-                                            </Link>
-                                            <Link
-                                                href="/client/settings"
-                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                                                onClick={() => setIsProfileDropdownOpen(false)}
-                                            >
-                                                <Settings size={16} />
-                                                Settings
-                                            </Link>
-                                        </div>
+                                            </div>
 
-                                        <button
-                                            onClick={handleLogout}
-                                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                                        >
-                                            <LogOut size={16} />
-                                            Logout
-                                        </button>
-                                    </div>
-                                )}
+                                            <button
+                                                onClick={handleLogout}
+                                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                            >
+                                                <LogOut size={16} />
+                                                Logout
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         ) : (
                             <Link href="/login" className="text-white font-medium bg-secondary px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base rounded-md hover:filter hover:brightness-110 shadow-md transition-all">

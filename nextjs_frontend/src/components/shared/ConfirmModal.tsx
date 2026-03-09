@@ -69,8 +69,8 @@ export default function ConfirmModal({
                             onClose();
                         }}
                         className={`flex-1 py-2.5 px-4 rounded-xl text-white font-semibold shadow-md transition-colors ${isDestructive
-                                ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
-                                : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+                            ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                            : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
                             }`}
                     >
                         {confirmText}
